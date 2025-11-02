@@ -104,12 +104,12 @@ class Ticket(BaseModel):
         """
         """
 
-        if not ticket_db.redeem(self.event_id, self.number):
+        if ticket_db.redeem(self.event_id, self.number):
             raise HTTPException(400, detail="Ticket has already been redeemed")
         
 
     def verify(self):
-        return ticket_db.verify(self.event_id, self.number)
+        return ticket_db.redeem(self.event_id, self.number)
 
 
     def pack(self) -> str:

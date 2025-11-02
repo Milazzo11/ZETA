@@ -31,26 +31,22 @@ STATE_CLEANUP_INTERVAL = 10
 
 
 
-RETURN_QUEUE_MAX = 10
-# the maximum number of allowed returned but not yet reissued tickets at any given time
+# DEFAULT_EVENT_TICKETS = 1_000
 
 
-DEFAULT_EVENT_TICKETS = 1_000
+# MAX_EVENT_TICKETS = 1_000_000
 
 
-MAX_EVENT_TICKETS = 1_000_000
+# DEFAULT_EXCHANGES = 2 ** 4
 
 
-DEFAULT_EXCHANGES = 2 ** 4
+# MAX_EXCHANGES = 2 ** 8
 
 
-MAX_EXCHANGES = 2 ** 8
+# DEFAULT_EVENT_TTL = 2_628_00
 
 
-DEFAULT_EVENT_TTL = 2_628_00
-
-
-MAX_EVENT_TTL = 31_536_000
+# MAX_EVENT_TTL = 31_536_000
 
 
 ###################################

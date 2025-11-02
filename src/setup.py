@@ -25,7 +25,7 @@ def app_credits() -> None:
     Application credits and information display.
     """
     
-    print("BITicket Server")
+    print("Yellowtail")
     print("© Maximus Milazzo\n")
     print("Create and release digital cryptographically secure tickets that users can exchange and redeem.")
     print('See the "README.txt" file for more information and to learn how it works.  Enjoy!')
@@ -88,12 +88,22 @@ def db_setup() -> None:
             event_id TEXT PRIMARY KEY,
             event_key BLOB NOT NULL,
             owner_public_key TEXT NOT NULL,
-            returned BLOB,
             redeemed_bitstring BLOB NOT NULL,
-            cancel_bitstring BLOB NOT NULL,
             FOREIGN KEY (event_id) REFERENCES events (id)
         )
         """)
+
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transfer_log (
+            event_id TEXT NOT NULL,
+            ticket_num INTEGER NOT NULL,
+            reissued INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (event_id, ticket_num),
+            FOREIGN KEY (event_id) REFERENCES events(id)
+        )
+        """)
+
         
         conn.commit()
         conn.close()

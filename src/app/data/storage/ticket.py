@@ -9,6 +9,12 @@ from typing import List
 ### TODO - abstract out SQLite specifically
 
 
+BYTE_SIZE = 8
+# assumed byte size (in bits)
+
+## TODO* maybe make byte size global
+
+
 def register(event_id: str, ticket_number: int) -> None:
     """
     Store ticket issue data.
@@ -100,12 +106,12 @@ def reissue(event_id: str, ticket_number: int) -> None:
 def redeem(event_id: str, ticket_number: int) -> bool:
     """
     Alter the redemption bitstring for the associated ticket number bit to reflect a redemption.
+
+    :returns: True if ticket has been redeemed before, false if this is a new redemption
     """
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-
-    ## TODO - check not cancelled
 
     # Fetch the redemption bitstring for the event
     cursor.execute("""
@@ -114,16 +120,15 @@ def redeem(event_id: str, ticket_number: int) -> bool:
     """, (event_id,))
     row = cursor.fetchone()
 
-
     redeemed_bitstring = bytearray(row[0])
-    ### TODO -- TEMP BYTE, NOT BIT ARRAY
+    ticket_mask = 1 << (ticket_number % 8)
 
-    if redeemed_bitstring[ticket_number] == 1:
+    if redeemed_bitstring[ticket_number // BYTE_SIZE] & ticket_mask != 0:
         conn.close()
-        return False
+        return True
 
     # Mark the ticket as redeemed (set the bit at the ticket number index to 1)
-    redeemed_bitstring[ticket_number] = 1
+    redeemed_bitstring[ticket_number // BYTE_SIZE] |= mask
 
     # Update the database with the new redeemed bitstring
     cursor.execute("""
@@ -133,33 +138,5 @@ def redeem(event_id: str, ticket_number: int) -> bool:
     """, (bytes(redeemed_bitstring), event_id))
 
     conn.commit()
-    conn.close()
-    return True
-
-
-def verify(event_id: str, ticket_number: int) -> bool:
-    """
-    Verify that the associated ticket number bit in the redemption bitstring is a 1-bit.
-    """
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    ## TODO - check not cancelled
-
-    # Fetch the redemption bitstring for the event
-    cursor.execute("""
-        SELECT redeemed_bitstring FROM event_data
-        WHERE event_id = ?
-    """, (event_id,))
-    row = cursor.fetchone()
-
-    redeemed_bitstring = bytearray(row[0])
-
-    # Check if the ticket has been redeemed (i.e., bit at ticket_number index is 1)
-    if redeemed_bitstring[ticket_number] == 1:
-        conn.close()
-        return True
-
     conn.close()
     return False

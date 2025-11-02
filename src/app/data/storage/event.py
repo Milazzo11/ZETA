@@ -10,6 +10,11 @@ from config import DB_FILE
 
 
 
+BYTE_SIZE = 8
+# assumed byte size (in bits)
+
+
+
 ### all of these should be simple SQL queries (complex logic happens outside this module)
 
 
@@ -65,7 +70,7 @@ def load_full(event_id: str) -> dict:###<-this funtionality will probably need t
 
     # Fetch event data
     cursor.execute("""
-        SELECT event_key, owner_public_key, returned 
+        SELECT event_key, owner_public_key 
         FROM event_data 
         WHERE event_id = ?
     """, (event_id,))
@@ -74,13 +79,12 @@ def load_full(event_id: str) -> dict:###<-this funtionality will probably need t
     conn.close()
 
     
-    data_columns = ["event_key", "owner_public_key", "returned"]
+    data_columns = ["event_key", "owner_public_key"]
 
     data = {
         "event": dict(zip(event_columns, event_row)),
         "data": dict(zip(data_columns, data_row))
     }
-    data["data"]["returned"] = pickle.loads(data["data"]["returned"])
 
     return data
 
@@ -126,15 +130,11 @@ def create(event: dict, event_data: dict) -> None:
     """
 
     # Create redeemed bitstring (all tickets start unredeemed)
-    redeemed_bitstring = b'\x00' * (event["tickets"])  # Create a bytes object of size `tickets`
+    redeemed_bitstring = b'\x00' * (event["tickets"] // BYTE_SIZE + 1)  # Create a bytes object of size `tickets`
 
     ### TODO -- THESE SHOULD ALL BE BITS EVENTUALLY, BUT THIS IS IMPLEMENTED TEMPORARILY FOR FUCNTIONALITY TESTING
     ### CODE SHOULD WORK WITH THIS, BUT IT IS NOT EFFICIENT
 
-    # Create transfer bitstring (total tickets * allowed exchanges)
-    cancel_bitstring = b'\x00' * (event["tickets"])# * event["exchanges"])  # Create a bytes object
-    ### TODO -- this will eventually be a bitstring with event["tickets"])# * event["exchanges"] bits
-    ### RIGHT NOW THE NUMBER OF CANCELS IS SET TO 2^8
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -147,15 +147,14 @@ def create(event: dict, event_data: dict) -> None:
 
     # Insert into event_data table
     cursor.execute("""
-    INSERT INTO event_data (event_id, event_key, owner_public_key, returned, redeemed_bitstring, cancel_bitstring)
-    VALUES (:event_id, :event_key, :owner_public_key, :returned, :redeemed_bitstring, :cancel_bitstring)
+    INSERT INTO event_data (event_id, event_key, owner_public_key, returned, redeemed_bitstring)
+    VALUES (:event_id, :event_key, :owner_public_key, :returned, :redeemed_bitstring)
     """, {
         "event_id": event["id"],
         "event_key": event_data["event_key"],
         "owner_public_key": event_data["owner_public_key"],
         "returned": pickle.dumps(event_data["returned"]),
         "redeemed_bitstring": redeemed_bitstring,
-        "cancel_bitstring": cancel_bitstring
     })
 
     conn.commit()

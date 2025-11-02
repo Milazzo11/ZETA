@@ -27,11 +27,6 @@ async def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
     return API.register_user(data)
 
 
-@app.post("/cancel", description="Cancel event registration (return ticket)")
-async def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
-    return API.cancel_ticket(data)
-
-
 @app.post(
     "/transfer",
     description="Return a ticket back to the server or transfer it to another user",

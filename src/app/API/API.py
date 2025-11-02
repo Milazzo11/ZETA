@@ -34,17 +34,6 @@ def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
     return Auth[RegisterResponse].load(packet)
 
 
-
-
-def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
-    request = data.authenticate()
-    response = CancelResponse.generate(request, data.public_key)
-
-    packet = Data[CancelResponse].load(response)
-    return Auth[CancelResponse].load(packet)
-
-
-
 def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
     request = data.authenticate()
     response = TransferResponse.generate(request, data.public_key)

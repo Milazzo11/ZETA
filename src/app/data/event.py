@@ -21,31 +21,17 @@ from .storage import event as event_db
 class Data(BaseModel):
     event_key: bytes = Field(default_factory=SKE.key, description="Ticket granting master key for event")
     owner_public_key: str = Field(..., description="Public key of event creator")
-    returned: List[int] = Field([], description="Returned (and not yet reissued) ticket numbers")
-
 
     @classmethod
     def from_dict(self, data: dict) -> "Data":
         return self(
             event_key=data.get("event_key", SKE.key()),
             owner_public_key=data["owner_public_key"],  # This must be provided
-            returned=data.get("returned", []),  # Default is an empty list
         )
 
 
     def to_dict(self) -> dict:
         return self.__dict__
-    
-
-    def reissue_ticket(self) -> Optional[int]:
-        """
-        """
-
-        if len(self.returned) != 0:
-            return self.returned.pop()
-        
-        else:
-            return None
 
 
 
@@ -60,11 +46,11 @@ class Event(BaseModel):
     end: float = Field(default_factory=lambda: time.time() + DEFAULT_EVENT_TTL, description="Epoch timestamp of event end date")
     ## TODO - at some point, probably place some constraints based on date, and clear out old events
 
-    exchanges: int = Field(DEFAULT_EXCHANGES, description="Maximum amount of user exchanges allowed for event tickets")
+    exchanges: int = Field(DEFAULT_EXCHANGES, description="Maximum amount of user exchanges allowed for event tickets")###almost def delete this
     private: bool = Field(False, description="Specifies whether event is public (open) or private (requires authorization)")
     # TODO - set contstriants on these values
-    ## also: the select * always loading style into event doesn't seem sustainable
-
+    ## also: the select * always loading style into event doesn't seem sustainable -- but db is just poc
+    ## TODO * comments here prob bs (just make note of contraint possibility -- not rly in scope here imo and poss client side tbh)
 
 
     @classmethod
@@ -166,12 +152,7 @@ class EventData(BaseModel):
     
 
     def next_ticket(self) -> int:
-        issue_num = self.data.reissue_ticket()
-
-        if issue_num is None:
-            issue_num = self.event.next_ticket()
-
-        return issue_num
+        return self.event.next_ticket()
 
 
 

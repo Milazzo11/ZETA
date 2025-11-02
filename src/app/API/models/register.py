@@ -9,7 +9,7 @@ from app.data.ticket import Ticket
 
 class RegisterRequest(BaseModel):
     event_id: str = Field(..., description="ID of event to register for")
-    verification: Optional[Auth[str]] = Field(None, description="Verification for non-public/paid events (user public key signed by event owner)")
+    verification: Optional[Auth[str]] = Field(None, description="Verification for non-public/paid events (any ticket metadata signed by event owner)")
 
     def to_dict(self) -> dict:
 
@@ -41,12 +41,12 @@ class RegisterResponse(BaseModel):
             if request.verification.public_key != event_data.data.owner_public_key:
                 raise HTTPException(status_code=401, detail="Authorization key incorrect")
             
-            if request.verification.unwrap() != public_key:
-                raise HTTPException(status_code=401, detail="Authorization for incorrect key")
+            ###if request.verification.unwrap() != public_key:
+            ###    raise HTTPException(status_code=401, detail="Authorization for incorrect key")
 
             request.verification.authenticate()
             
-        ticket = Ticket.register(request.event_id, public_key)
+        ticket = Ticket.register(request.event_id, public_key, metadata=request.verification.unwrap())
         ticket = ticket.pack()
 
         return self(ticket=ticket)

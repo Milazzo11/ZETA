@@ -52,6 +52,12 @@ T = TypeVar("T")
 
 
 
+ID_STORE_TOGGLE = False
+# specifies whether IDs are temporarily stored to fully prevent replay attacks
+# (this feature WILL NOT WORK with scaled replicas)
+## TODO * maybe eventually move this to general config options file
+
+
 id_store = {}
 store_lock = Lock()  # To handle concurrency
 next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
@@ -127,24 +133,25 @@ class Auth(BaseModel, Generic[T]):
         if abs(now - self.data.timestamp) > TIMESTAMP_ERROR:
             raise HTTPException(status_code=401, detail="Timestamp sync failure")
 
-        with store_lock:
-            if self.data.id in id_store:
-                raise HTTPException(
-                    status_code=400, detail="Duplicate request ID detected."
-                )
+        if ID_STORE_TOGGLE:
+            with store_lock:
+                if self.data.id in id_store:
+                    raise HTTPException(
+                        status_code=400, detail="Duplicate request ID detected."
+                    )
 
-            id_store[self.data.id] = self.data.timestamp
-            to_delete = []
+                id_store[self.data.id] = self.data.timestamp
+                to_delete = []
 
-            if next_cleanup <= now:
-                for key, value in id_store.items():
-                    if abs(now - value) > TIMESTAMP_ERROR:
-                        to_delete.append(key)
-                        
-                for key in to_delete:
-                    del id_store[key]
+                if next_cleanup <= now:
+                    for key, value in id_store.items():
+                        if abs(now - value) > TIMESTAMP_ERROR:
+                            to_delete.append(key)
+                            
+                    for key in to_delete:
+                        del id_store[key]
 
-                next_cleanup = now + STATE_CLEANUP_INTERVAL
+                    next_cleanup = now + STATE_CLEANUP_INTERVAL
 
         challenge_verif(self.data)
 

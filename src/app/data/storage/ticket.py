@@ -4,6 +4,10 @@ from config import DB_FILE
 
 from typing import List
 
+### TODO * transfer table
+
+### TODO - abstract out SQLite specifically
+
 
 def register(event_id: str, ticket_number: int) -> None:
     """
@@ -12,9 +16,15 @@ def register(event_id: str, ticket_number: int) -> None:
     ### literally just increment the "issued tickets" data by 1
     #### ALSO if "returned list" in data contains the ticket number, remove it
 
+    ## TODO (*) -- no more "returned list" nc no cancel.  on reissue just mark tick version somehow
+
     # Connect to the database
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+
+    ## TODO* race cond should be fixed by just adding a check here that issued is whats expected (passed ticket num from loaded value non atomically) and making this whole func atomic
+    ### error on check failure
+    ### ensure reissue atomic too (and add atomic comment)
 
     # Step 1: Increment the issued count
     cursor.execute("""
@@ -22,79 +32,35 @@ def register(event_id: str, ticket_number: int) -> None:
         SET issued = issued + 1
         WHERE id = ?
     """, (event_id,))
+    ### TODO * deal with possible register race condition if scaled
     
-    # Step 2: Fetch the current returned list
-    cursor.execute("""
-        SELECT returned FROM event_data WHERE event_id = ?
-    """, (event_id,))
-    row = cursor.fetchone()
+    # # Step 2: Fetch the current returned list
+    # cursor.execute("""
+    #     SELECT returned FROM event_data WHERE event_id = ?
+    # """, (event_id,))
+    # row = cursor.fetchone()
 
-    # Step 3: Deserialize the returned list from the database
-    returned_list: List = pickle.loads(row[0])
+    # # Step 3: Deserialize the returned list from the database
+    # returned_list: List = pickle.loads(row[0])
 
     # Step 4: Remove the ticket_number from the returned list if it exists
-    if ticket_number in returned_list:
-        returned_list.remove(ticket_number)
+    # if ticket_number in returned_list:
+    #     returned_list.remove(ticket_number)
 
-        # Step 5: Serialize the updated returned list and update the database
-        cursor.execute("""
-            UPDATE event_data
-            SET returned = ?
-            WHERE event_id = ?
-        """, (pickle.dumps(returned_list), event_id))
+    #     # Step 5: Serialize the updated returned list and update the database
+    #     cursor.execute("""
+    #         UPDATE event_data
+    #         SET returned = ?
+    #         WHERE event_id = ?
+    #     """, (pickle.dumps(returned_list), event_id))
 
-    # Commit the changes and close the connection
+    # # Commit the changes and close the connection
     conn.commit()
     conn.close()
 
 
 
 
-
-
-def cancel(event_id: str, ticket_number: int) -> bool:
-    """
-    Cancel a ticket.
-    """
-    ### alter the cancel bitstring to reflect that the ticket has been returned N+1 times
-
-    ## the cancel bytestring rught now looks like:
-
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Fetch the redemption bitstring for the event
-    cursor.execute("""
-        SELECT cancel_bitstring FROM event_data
-        WHERE event_id = ?
-    """, (event_id,))
-    row = cursor.fetchone()
-
-    cancel_bitstring = bytearray(row[0])
-    ### TODO -- TEMP BYTE, NOT BIT ARRAY
-
-    if cancel_bitstring[ticket_number] == 255: ### TODO - FIX THIS -- TEMP MAX USING BYTE ARRAY
-        conn.close()
-        return False
-
-    cancel_bitstring[ticket_number] += 1
-
-    #### TODO - ACTUALLY ADD A CHECK TO PREVENT REUSE
-    ## probably unecessary to do this for initial proof of concept
-    ## but, very necessary to add to ticket string and check against
-    ## this in the future
-
-    # Update the database with the new cancel bitstring
-    cursor.execute("""
-        UPDATE event_data
-        SET cancel_bitstring = ?
-        WHERE event_id = ?
-    """, (bytes(cancel_bitstring), event_id))
-
-    conn.commit()
-    conn.close()
-    return True
 
 
 

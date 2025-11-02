@@ -5,7 +5,7 @@ Asymmetric key encryption object definition.
 """
 
 import base64
-import jwt
+from jwcrypto import jws, jwk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -189,8 +189,11 @@ class RSA:
         """
 
         if type(message) == dict:
-            return jwt.encode(message, self.private_key, algorithm="RS256")
-            # return JWT for JSON
+            # JWS (compact, embedded payload). Same RSA key, alg stays RS256.
+            key = jwk.JWK.from_pem(self.private_key)
+            t = jws.JWS(_canon(message))
+            t.add_signature(key, protected={"alg": "RS256"})
+            return t.serialize(compact=True)  # looks like "<hdr>.<payload>.<sig>"
 
         if type(message) == str:
             message = message.encode("utf-8")
@@ -212,27 +215,6 @@ class RSA:
         return signature
 
 
-    def _is_dict_subset(self, subdict: dict, superdict: dict) -> bool:
-        for key, sub_value in subdict.items():
-            # Check if the key exists in the superdict
-            if key not in superdict:
-                return False
-
-            super_value = superdict[key]
-
-            # If the value is a dictionary, recurse
-            if isinstance(sub_value, dict):
-                if not isinstance(super_value, dict) or not self._is_dict_subset(
-                    sub_value, super_value
-                ):
-                    return False
-            # Otherwise, check for value equality
-            elif sub_value != super_value:
-                return False
-
-        return True
-
-
     def verify(
         self, signature: Union[bytes, str], message: Union[dict, bytes, str]
     ) -> bool:
@@ -247,16 +229,14 @@ class RSA:
 
         if type(message) == dict:
             try:
-                decoded_message = jwt.decode(
-                    signature, self.public_key, algorithms=["RS256"]
-                )
+                key = jwk.JWK.from_pem(self.public_key)
+                t = jws.JWS()
+                t.deserialize(signature)  # accepts compact JWS string
+                t.verify(key)             # raises on failure
 
-                return self._is_dict_subset(decoded_message, message)
-                # verify JWT
-
+                return True
             except:
                 return False
-                # JWT failure
 
         if type(message) == str:
             message = message.encode("utf-8")

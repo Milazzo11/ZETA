@@ -14,32 +14,44 @@ from app.crypto import hash
 import base64
 
 from config import RETURN_QUEUE_MAX
+import json
 
 
 class Ticket(BaseModel):
     event_id: str
     public_key: str
     number: int
+    metadata: Optional[str]
     event_data: EventData
 
+    ### TODO * PROBABLY split into register/reissue?
     @classmethod
-    def register(self, event_id, public_key, number: Optional[int] = None) -> "Ticket":###maybe return ticket object
-        
+    def register(
+        self, event_id: str, public_key: str, number: Optional[int] = None,
+        metadata: Optional[str] = None
+    ) -> "Ticket":
+        """
+        """
+
         event_data = EventData.load(event_id)
 
         if number is None:
             number = event_data.next_ticket()
-
+            ticket_db.register(event_id, number)
+        
         else:
-            ticket_db.cancel(event_id, number)
-            # cancel current ticket version
+            ticket_db.reissue(event_id, number)
+            ### TODO* reissue increments transfer number
 
-        ticket_db.register(event_id, number)
+        ###else:
+        ###    ticket_db.cancel(event_id, number)
+        ###    # cancel current ticket version
 
         return self(
             event_id=event_id,
             public_key=public_key,
             number=number,
+            metadata=metadata,
             event_data=event_data
         )
 
@@ -59,54 +71,33 @@ class Ticket(BaseModel):
             cipher = SKE(key=data.event_key, iv=base64.b64decode(b64_iv))
         
             decrypted_ticket_raw = cipher.decrypt(ticket)
-        
-            print(decrypted_ticket_raw)
-            print(decrypted_ticket_raw.split("#"))
-            decrypted_ticket, ticket_hash = decrypted_ticket_raw.split("#")
+            decrypted_ticket = json.loads(decrypted_ticket_raw)
+            ticket_data = decrypted_ticket["ticket"]
             
-            if hash.generate(decrypted_ticket) != ticket_hash:
+            if hash.generate(decrypted_ticket) != decrypted_ticket["hash"]:
                 raise Exception
                 # go to "except" block
-
-            ticket_data = decrypted_ticket.split("\\")
-            assert len(ticket_data) == 3
         
         except:
             raise HTTPException(status_code=401, detail="Ticket verification failed")
             ## TODO - this is here and general to prevent padding oracle attack
 
-        if ticket_data[0] != event_id:
+        if ticket_data["event_id"] != event_id:
             raise HTTPException(status_code=400, detail="Ticket data does not match event ID")
             # ensure ticket event ID matches the event ID passed by client
 
-        if ticket_data[1] != public_key:
+        if ticket_data["public_key"] != public_key:
             raise HTTPException(status_code=400, detail="Ticket invalid (non-matching public key)")
             # ensure ticket public key matches key of client making request
-
-        number = int(ticket_data[2])
         
         return self(
             event_id=event_id,
             public_key=public_key,
-            number=number,
+            number=ticket_data["number"],
+            metadata=ticket_data["metadata"],
             event_data=event_data
         )
 
-
-
-    def cancel(self) -> None:
-        """
-        """
-
-        data = self.event_data.data
-
-        if len(data.returned) >= RETURN_QUEUE_MAX:
-            raise HTTPException(401, detail="Return queue full")
-        
-        if not ticket_db.cancel(self.event_id, self.number):
-            raise HTTPException(400, detail="Maximum ticket cancellations reached")
-
-        ticket_db.reissue(self.event_id, self.number)
 
         
     def redeem(self) -> None:
@@ -129,10 +120,23 @@ class Ticket(BaseModel):
         data = self.event_data.data
         cipher = SKE(key=data.event_key)
 
-        ticket_string_raw = self.event_id + "\\" + self.public_key + "\\" + str(self.number)
+        ticket_data = {
+            "event_id": self.event_id,
+            "public_key": self.public_key,
+            "number": self.number,
+            "metadata": self.metadata
+        }
+
+        ticket_string_raw = json.dumps(ticket_data)
         ticket_string_hash = hash.generate(ticket_string_raw)
 
-        encrypted_string = cipher.encrypt(ticket_string_raw + "#" + ticket_string_hash)
+        verif_data = {
+            "ticket": ticket_string_raw,
+            "hash": ticket_string_hash
+        }
+        verif_data_str = json.dumps(verif_data)
+
+        encrypted_string = cipher.encrypt(verif_data_str)
         ticket_string = cipher.iv_b64() + "-" + encrypted_string
 
         return ticket_string

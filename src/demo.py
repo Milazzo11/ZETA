@@ -2,6 +2,7 @@ from client import EventAPI
 import time
 
 
+###TODO -- this needs to actually be built well
 
 
 def main():

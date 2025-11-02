@@ -18,6 +18,7 @@ class VerifyRequest(BaseModel):
 
 class VerifyResponse(BaseModel):
     verification: bool = Field(True, description="User ticket redemption status")
+    metadata: Optional[str] = Field(None, description="Ticket metadata")
 
     @classmethod
     def generate(self, request: VerifyRequest, public_key: str) -> "VerifyResponse":
@@ -27,7 +28,7 @@ class VerifyResponse(BaseModel):
         ticket = Ticket.load(request.event_id, public_key, request.ticket)
         verification = ticket.verify()
 
-        return self(verification=verification)
+        return self(verification=verification, metadata=ticket.metadata)
     
 
     def to_dict(self) -> dict:

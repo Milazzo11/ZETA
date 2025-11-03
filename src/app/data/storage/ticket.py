@@ -13,6 +13,9 @@ from typing import List
 BYTE_SIZE = 8
 # assumed byte size (in bits)
 
+
+REDEEMED_BYTE = 255
+
 ## TODO* maybe make byte size global
 
 
@@ -33,31 +36,6 @@ BYTE_SIZE = 8
 
 
 
-def _redeem_check(cursor):
-    # Fetch the redemption bitstring for the event
-    cursor.execute("""
-        SELECT redeemed_bitstring FROM event_data
-        WHERE event_id = ?
-    """, (event_id,))
-    row = cursor.fetchone()
-
-    redeemed_bitstring = bytearray(row[0])
-    ticket_mask = 1 << (ticket_number % 8)
-
-    if redeemed_bitstring[ticket_number // BYTE_SIZE] & ticket_mask != 0:
-        return True
-
-    return False
-
-
-
-
-
-def _transfer_valid_checker(event_id: str, ticket_number: int, version: int) -> bool:
-    """
-    Validates ticket ownership (to prevent transfer fraud attempts).
-    """
-    ## called from ./../ticket.load and reissue prob
 
 
 
@@ -67,48 +45,59 @@ def transfer_valid_check(event_id: str, ticket_number: int, version: int) -> boo
     """
     ## called from ./../ticket.load and reissue prob
 
-    cur.execute("""
-        SELECT * FROM transfer_log
-        WHERE event_id = ?
-            AND ticket_number = ?
-            AND version = ?
-    """, (event_id, ticket_number, version))
-
-    if cur.rowcount == 1:
-        return True
-
-    return False
-
-
-def reissue(event_id: str, ticket_number: int, version: int) -> None:
-    """
-    """
-    ### TODO*** this should happen here but with sql clause to prevent rare fraud-induced race condition
-
-    ## atomic w/ race cond prevention
-
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
-    cursor.execute("""
-        UPDATE transfer_log
-        SET version = version + 1
+    # Read exactly one byte (SQLite substr is 1-based)
+    cur.execute("""
+        SELECT substr(data_bytes, ?, 1)
+        FROM event_data
         WHERE event_id = ?
-            AND ticket_number = ?
-            AND version = ?
-    """, (event_id, ticket_number, version))
-
-    if cursor.rowcount != 1:
-        raise HTTPException(409, "Transfer concurrency race condition detected")
-
-    conn.commit()
+    """, (ticket_number + 1, event_id))
+    row = cur.fetchone()
     conn.close()
 
+    # If row exists, row[0] is a bytes object of length 1
+    return row[0][0] == version
 
 
 
+def reissue(event_id: str, ticket_number: int, version: int) -> bool:
+    """
+    Increment the ticket's version byte only if it currently equals `version`,
+    and do not increment past 254. Return True if updated, False otherwise.
+    """
 
-REDEEMED_BYTE = 255
+    if version >= REDEEMED_BYTE - 1:
+        return False  # can't increment past 254
+
+    conn = sqlite3.connect(DB_FILE)
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE event_data
+           SET data_bytes =
+                substr(data_bytes, 1, ?) || ? || substr(data_bytes, ? + 2)
+         WHERE event_id = ?
+           AND substr(data_bytes, ?, 1) = ?
+    """, (
+        ticket_number,                 # start of prefix
+        bytes([version + 1]),          # replacement byte
+        ticket_number,                 # start of suffix
+        event_id,                      # match row
+        ticket_number + 1,             # 1-based index for SQLite
+        bytes([version])               # must match current version
+    ))
+
+    changed = (cur.rowcount == 1)
+
+    if changed:
+        conn.commit()
+
+    conn.close()
+    return changed
+
+
 
 def verify(event_id: str, ticket_number: int) -> bool:
     """

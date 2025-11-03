@@ -4,7 +4,7 @@
 
 import time
 import uuid
-from config import DEFAULT_EVENT_TTL, DEFAULT_EVENT_TICKETS, DEFAULT_EXCHANGES
+from config import DEFAULT_EVENT_TTL, DEFAULT_EVENT_TICKETS
 from pydantic import BaseModel, Field
 from typing import List, Optional, Tuple, Union
 

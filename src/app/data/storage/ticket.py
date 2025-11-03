@@ -14,7 +14,7 @@ BYTE_SIZE = 8
 # assumed byte size (in bits)
 
 
-REDEEMED_BYTE = 255
+REDEEMED_BYTE = 2 ** BYTE_SIZE - 1
 
 ## TODO* maybe make byte size global
 

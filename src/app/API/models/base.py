@@ -13,7 +13,9 @@ import uuid
 
 from app.crypto.asymmetric import AKE
 
-from config import TIMESTAMP_ERROR, STATE_CLEANUP_INTERVAL
+
+
+
 
 ### encrypted ticktu must encrypt some punlic key data to validate owner
 
@@ -48,17 +50,28 @@ from threading import Lock
 
 
 
-T = TypeVar("T")
 
+
+TIMESTAMP_ERROR = 10
+# timestamp error allowance (in seconds) for requests
 
 
 ID_STORE_TOGGLE = True
 # specifies whether IDs are temporarily stored to fully prevent replay attacks
+# (set to False for a stateless system; security risk is low)
+
+
+
+T = TypeVar("T")
+
+
+
+
 
 
 id_store = {}
 store_lock = Lock()  # To handle concurrency
-next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+next_cleanup = time.time() + TIMESTAMP_ERROR
 
 
 
@@ -149,7 +162,7 @@ class Auth(BaseModel, Generic[T]):
                     for key in to_delete:
                         del id_store[key]
 
-                    next_cleanup = now + STATE_CLEANUP_INTERVAL
+                    next_cleanup = now + TIMESTAMP_ERROR
 
         challenge_verif(self.data)
 

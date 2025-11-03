@@ -13,7 +13,6 @@ from fastapi import HTTPException
 from app.crypto import hash
 import base64
 
-from config import RETURN_QUEUE_MAX
 import json
 
 

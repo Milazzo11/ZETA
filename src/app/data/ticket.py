@@ -21,27 +21,45 @@ class Ticket(BaseModel):
     event_id: str
     public_key: str
     number: int
+    version: int
     metadata: Optional[str]
     event_data: EventData
 
     ### TODO * PROBABLY split into register/reissue?
     @classmethod
     def register(
-        self, event_id: str, public_key: str, number: Optional[int] = None,
+        self, event_id: str, public_key: str,
+        metadata: Optional[str] = None
+    ) -> "Ticket":
+        """
+        """
+
+        event_data = EventData.load(event_id, issue=True)
+        number = event_data.next_ticket()
+
+        return self(
+            event_id=event_id,
+            public_key=public_key,
+            number=number,
+            version=0,
+            metadata=metadata,
+            event_data=event_data
+        )
+
+
+    ### TODO * PROBABLY split into register/reissue?
+    @classmethod
+    def reissue(
+        self, event_id: str, public_key: str, number: int, version = int,
         metadata: Optional[str] = None
     ) -> "Ticket":
         """
         """
 
         event_data = EventData.load(event_id)
-
-        if number is None:
-            number = event_data.next_ticket()
-            ticket_db.register(event_id, number)
-        
-        else:
-            ticket_db.reissue(event_id, number)
+        ticket_db.reissue(event_id, number, version)
             ### TODO* reissue increments transfer number
+            ### prob change name to transfer
 
         ###else:
         ###    ticket_db.cancel(event_id, number)
@@ -51,6 +69,7 @@ class Ticket(BaseModel):
             event_id=event_id,
             public_key=public_key,
             number=number,
+            version=version + 1,
             metadata=metadata,
             event_data=event_data
         )
@@ -61,6 +80,9 @@ class Ticket(BaseModel):
         """
         """
         ### TODO - prob add better error handling for failures... especially since CBC doesnt do integrity
+
+        ##### TODO --- ticket reissue validation fail should happen right here
+        ### gotta actually have issue number
 
         try:
             event_data = EventData.load(event_id)
@@ -89,11 +111,15 @@ class Ticket(BaseModel):
         if ticket_data["public_key"] != public_key:
             raise HTTPException(status_code=400, detail="Ticket invalid (non-matching public key)")
             # ensure ticket public key matches key of client making request
+
+        if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
+            raise HTTPException(status_code=400, detail="Ticket version outdated (via transfer)")
         
         return self(
             event_id=event_id,
             public_key=public_key,
             number=ticket_data["number"],
+            version=ticket_data["version"],
             metadata=ticket_data["metadata"],
             event_data=event_data
         )
@@ -104,7 +130,7 @@ class Ticket(BaseModel):
         """
         """
 
-        if ticket_db.redeem(self.event_id, self.number):
+        if not ticket_db.redeem(self.event_id, self.number):
             raise HTTPException(400, detail="Ticket has already been redeemed")
         
 
@@ -124,6 +150,7 @@ class Ticket(BaseModel):
             "event_id": self.event_id,
             "public_key": self.public_key,
             "number": self.number,
+            "version": self.version,
             "metadata": self.metadata
         }
 
@@ -140,7 +167,6 @@ class Ticket(BaseModel):
         ticket_string = cipher.iv_b64() + "-" + encrypted_string
 
         return ticket_string
-        ## TODO - in future versions (prob not proof of concept) add ticket cancelation number in ticket string
 
 
 

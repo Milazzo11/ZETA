@@ -97,8 +97,8 @@ def db_setup() -> None:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS transfer_log (
             event_id TEXT NOT NULL,
-            ticket_num INTEGER NOT NULL,
-            reissued INTEGER NOT NULL DEFAULT 0,
+            ticket_number INTEGER NOT NULL,
+            version INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (event_id, ticket_num),
             FOREIGN KEY (event_id) REFERENCES events(id)
         )

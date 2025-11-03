@@ -42,6 +42,8 @@ class TransferResponse(BaseModel):
         old_ticket = Ticket.load(request.event_id, request.transfer.public_key, transfer_data.ticket)
         request.transfer.authenticate()
 
+        ### TODO - verify that old ticket is valid (transfer number correct, unredeemed)
+
         new_ticket = Ticket.register(
             request.event_id, public_key, number=old_ticket.number
         )

@@ -44,13 +44,11 @@ class Event(BaseModel):
     issued: int = Field(0, description="Number of tickets issued")
     start: float = Field(default_factory=lambda: time.time(), description="Epoch timestamp of event start date")
     end: float = Field(default_factory=lambda: time.time() + DEFAULT_EVENT_TTL, description="Epoch timestamp of event end date")
-    ## TODO - at some point, probably place some constraints based on date, and clear out old events
-
-    exchanges: int = Field(DEFAULT_EXCHANGES, description="Maximum amount of user exchanges allowed for event tickets")###almost def delete this
     private: bool = Field(False, description="Specifies whether event is public (open) or private (requires authorization)")
     # TODO - set contstriants on these values
-    ## also: the select * always loading style into event doesn't seem sustainable -- but db is just poc
-    ## TODO * comments here prob bs (just make note of contraint possibility -- not rly in scope here imo and poss client side tbh)
+    ## also: the select * always loading style into event doesn't seem sustainable -- but db is just poc? well idk
+    ## (at most prob just make a command that specific targeted fields could add marginal efficicney)
+    ## TODO * some comments here prob bs (just make note of contraint possibility -- not rly in scope here imo and poss client side tbh)
 
 
     @classmethod
@@ -65,7 +63,6 @@ class Event(BaseModel):
             issued=data.get("issued", 0),
             start=data.get("start", time.time()),
             end=data.get("end", time.time() + DEFAULT_EVENT_TTL),
-            exchanges=data.get("exchanges", DEFAULT_EXCHANGES),
             private=data.get("private", False),
         )
 
@@ -104,11 +101,9 @@ class Event(BaseModel):
         """
         """
 
-        if self.issued >= self.tickets:
+        if self.issued > self.tickets:
             raise HTTPException(status_code=401, detail="All tickets registered")
         
-        self.issued += 1
-
         return self.issued - 1
 
 
@@ -124,11 +119,11 @@ class EventData(BaseModel):
 
 
     @classmethod
-    def load(self, event_id: str) -> "EventData":
+    def load(self, event_id: str, issue: bool = False) -> "EventData":
         """
         """
 
-        dict = event_db.load_full(event_id)
+        dict = event_db.load_full(event_id, issue=issue)
 
         print(dict)
 

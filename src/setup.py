@@ -77,7 +77,6 @@ def db_setup() -> None:
             issued INTEGER NOT NULL,
             start REAL NOT NULL,
             end REAL NOT NULL,
-            exchanges INTEGER NOT NULL,
             private INTEGER NOT NULL
         )
         """)
@@ -93,7 +92,6 @@ def db_setup() -> None:
         )
         """)
 
-        
         conn.commit()
         conn.close()
 

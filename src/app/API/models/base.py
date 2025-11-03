@@ -111,7 +111,7 @@ class Auth(BaseModel, Generic[T]):
     data: Data[T] = Field(..., description="Authenticated data")
     public_key: str = Field(..., description="Public key (to verify signature)")
     signature: str = Field(
-        ..., description="Digital signature (JWT of the internal JSON data block)"
+        ..., description="Digital signature (JWS of the internal JSON data block)"
     )
 
     @classmethod

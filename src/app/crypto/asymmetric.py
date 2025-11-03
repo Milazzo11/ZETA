@@ -10,6 +10,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from typing import Union
+import json
 
 
 KEY_SIZE = 4096
@@ -24,6 +25,15 @@ class RSA:
     """
     RSA encryption object.
     """
+
+    @staticmethod
+    def _json_canon(data: dict) -> bytes:
+        return json.dumps(
+            data,
+            separators=(",", ":"), # remove whitespace
+            sort_keys=True        # stable key order
+        ).encode()
+
 
     def __init__(
         self,
@@ -174,7 +184,6 @@ class RSA:
 
         return plaintext
 
-
     def sign(
         self, message: Union[dict, bytes, str], byte_output: bool = False
     ) -> Union[bytes, str]:
@@ -191,7 +200,7 @@ class RSA:
         if type(message) == dict:
             # JWS (compact, embedded payload). Same RSA key, alg stays RS256.
             key = jwk.JWK.from_pem(self.private_key)
-            t = jws.JWS(_canon(message))
+            t = jws.JWS(self._json_canon(message))
             t.add_signature(key, protected={"alg": "RS256"})
             return t.serialize(compact=True)  # looks like "<hdr>.<payload>.<sig>"
 

@@ -155,8 +155,8 @@ def create(event: dict, event_data: dict) -> None:
 
     # Insert into events table
     cursor.execute("""
-        INSERT INTO events (id, name, description, tickets, issued, start, end, exchanges, private)
-        VALUES (:id, :name, :description, :tickets, :issued, :start, :end, :exchanges, :private)
+        INSERT INTO events (id, name, description, tickets, issued, start, end, private)
+        VALUES (:id, :name, :description, :tickets, :issued, :start, :end, :private)
     """, event)
 
     # Insert into event_data table

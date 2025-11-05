@@ -83,6 +83,8 @@ def transfer_valid_check(event_id: str, ticket_number: int, version: int) -> boo
     row = cur.fetchone()
     conn.close()
 
+    print("ticketnum+1", ticket_number + 1)
+
     
     db_version = _parse_row_byte(row)
     print("db version", db_version)
@@ -105,19 +107,25 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     cur = conn.cursor()
     conn.text_factory = bytes
 
+    ### NOTE -- in postgres, you can concatenate blobs, so this can be made fully CAS (put this note everywhere)
+    cur.execute("SELECT data_bytes FROM event_data WHERE event_id=?", (event_id,))
+    data = bytearray(cur.fetchone()[0])
+
+    if data[ticket_number] != version:
+        return False
+
+    new_data = bytearray(data)
+    new_data[ticket_number] = version + 1
+
     cur.execute("""
         UPDATE event_data
-           SET data_bytes =
-                substr(data_bytes, 1, ?) || ? || substr(data_bytes, ? + 2)
-         WHERE event_id = ?
-           AND substr(data_bytes, ?, 1) = ?
+        SET data_bytes = ?
+        WHERE event_id = ?
+           AND data_bytes = ?
     """, (
-        ticket_number,                 # start of prefix
-        bytes([version + 1]),          # replacement byte
-        ticket_number,                 # start of suffix
-        event_id,                      # match row
-        ticket_number + 1,             # 1-based index for SQLite
-        bytes([version])               # must match current version
+        new_data,
+        event_id,
+        data
     ))
 
     changed = (cur.rowcount == 1)
@@ -129,7 +137,7 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     return changed
 
 
-
+## TODO for this and other suctr data_bytes prob just get the thing and select the index manually in python
 def verify(event_id: str, ticket_number: int) -> bool:
     """
     Verifies ticket redemption: return True if redeemed, else False.
@@ -153,34 +161,39 @@ def verify(event_id: str, ticket_number: int) -> bool:
     return redemption_code >= REDEEMED_BYTE
 
 
-
+## TODO - maybe have some of these return int codes instead of bool for better err msg?
 def redeem(event_id: str, ticket_number: int, version: int) -> bool:
     """
     Mark the ticket as redeemed (set its byte to 0xFF) only if not already redeemed.
-
+    
     :returns: True if this is a new redemption, False if it had been redeemed before.
     """
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
     conn.text_factory = bytes
 
-    new_byte = bytes([version | REDEEMED_BYTE])
+    ### NOTE -- in postgres, you can concatenate blobs, so this can be made fully CAS (put this note everywhere)
+    
+    # TODO also prob put begin immediate on these ones
+    
+    cur.execute("SELECT data_bytes FROM event_data WHERE event_id=?", (event_id,))
+    data = bytearray(cur.fetchone()[0])
 
-    # Splice in a single byte (0xFF) only if the current byte is not already 0xFF.
-    # If another writer redeems concurrently, this UPDATE affects 0 rows and we return False.
+    if data[ticket_number] >= REDEEMED_BYTE:
+        return False
+
+    new_data = bytearray(data)
+    new_data[ticket_number] = version + REDEEMED_BYTE
+
     cur.execute("""
         UPDATE event_data
-            SET data_bytes =
-                substr(data_bytes, 1, ?) || ? || substr(data_bytes, ?)
+        SET data_bytes = ?
         WHERE event_id = ?
-            AND CAST(('0x' || HEX(substr(data_bytes, ?, 1))) AS INTEGER) < ?
+           AND data_bytes = ?
     """, (
-        ticket_number,
-        new_byte,
-        ticket_number + 2,
+        new_data,
         event_id,
-        ticket_number + 1,
-        REDEEMED_BYTE
+        data
     ))
 
     changed = (cur.rowcount == 1)
@@ -190,3 +203,5 @@ def redeem(event_id: str, ticket_number: int, version: int) -> bool:
 
     conn.close()
     return changed
+
+### TODO - blob seems to turn to text somehow before concat for substr stuff

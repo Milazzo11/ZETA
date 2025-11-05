@@ -58,7 +58,7 @@ class Ticket(BaseModel):
         event_data = EventData.load(event_id)
         
         if not ticket_db.reissue(event_id, number, version):
-            raise HTTPException(status_code=400, detail="Ticket transfer failed (outdated versions and redeemed tickets cannot be transferred)")
+            raise HTTPException(status_code=400, detail="Ticket transfer failed (redeemed/transfer max reached)")
             ### TODO* reissue increments transfer number
             ### prob change name to transfer
 

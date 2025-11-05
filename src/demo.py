@@ -272,6 +272,21 @@ def scenario_1():
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
+
+    print("\nTo see what happens, Geordi attempts to redeem the ticket a 2nd time (which fails obviously)\n")
+
+    req = auth_req(
+        RedeemRequest(
+            event_id=event_id,
+            ticket=geordi_ticket
+        ),
+        geordi_private_key,
+        geordi_public_key,
+        RedeemRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/redeem", json=req)
+    parse_res(res)
+
     print("\nAnd now, finally, Beverly can confirm Geordi's redemption\n")
 
     req = auth_req(
@@ -304,7 +319,30 @@ def scenario_1():
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
 
-    print("/n... which, of course, fails.")
+    print("\n... which, of course, fails.\n")
+    print("And finally, Geordi and Jean-Luc see what happens if he tries to transfer him an already redeemed ticket")
+    
+    transfer = auth_req(
+        Transfer(
+            ticket=geordi_ticket,
+            transfer_public_key=jean_luc_public_key
+        ),
+        geordi_private_key,
+        geordi_public_key,
+        Transfer
+    )
+
+    req = auth_req(
+        TransferRequest(
+            event_id=event_id,
+            transfer=transfer
+        ),
+        jean_luc_private_key,
+        jean_luc_public_key,
+        TransferRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/transfer", json=req)
+    parse_res(res)
 
 
 def scenario_2():
@@ -438,7 +476,7 @@ def scenario_2():
         RegisterRequest
     ).model_dump()
     res = requests.post(SERVER_URL + "/register", json=req)
-    res_json = parse_res(res)
+    parse_res(res)
 
     #####
 
@@ -468,11 +506,138 @@ def scenario_2():
     res = requests.post(SERVER_URL + "/register", json=req)
     res_json = parse_res(res)
 
+    reginald_ticket = res_json["data"]["content"]["ticket"]
+
     ## Wesley can't register bc event is full
+
+    print("Now it is Wesley's turn to register... Deanna provides him verification and he makes the request")
+    input("> ")
+
+    cipher = AKE()
+    wesley_private_key = cipher.private_key
+    wesley_public_key = cipher.public_key
+
+
+    verification = auth_req(
+        Verification(
+            event_id=event_id,
+            public_key=wesley_public_key,
+            metadata="annoying ass mf"
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        Verification
+    )
+
+    req = auth_req(
+        RegisterRequest(
+            event_id=event_id,
+            verification=verification
+        ),
+        wesley_private_key,
+        wesley_public_key,
+        RegisterRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/register", json=req)
+    parse_res(res)
+
+    print("\nBut oh no!  The event is full :/")
+    print("Did Deanna do it on purpose because Wesley is super annoying?  It's anyone's guess!")
+    input("> ")
 
     ## William/Reginals redeem and then do verif (we see custom metadata)
 
-    ## CREATE ENDPOINT and then demonstrate the deletion of both events
+
+
+
+
+
+
+
+    print("\nNow Reginald is verified at the session (verify->redeem->verify)\n")
+
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=reginald_ticket,
+            check_public_key=reginald_public_key
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        VerifyRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
+    req = auth_req(
+        RedeemRequest(
+            event_id=event_id,
+            ticket=reginald_ticket
+        ),
+        reginald_private_key,
+        reginald_public_key,
+        RedeemRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/redeem", json=req)
+    parse_res(res)
+
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=reginald_ticket,
+            check_public_key=reginald_public_key
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        VerifyRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
+    
+    print("... and so is William")
+
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=william_ticket,
+            check_public_key=william_public_key
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        VerifyRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
+    req = auth_req(
+        RedeemRequest(
+            event_id=event_id,
+            ticket=william_ticket
+        ),
+        william_private_key,
+        william_public_key,
+        RedeemRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/redeem", json=req)
+    parse_res(res)
+
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=william_ticket,
+            check_public_key=william_public_key
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        VerifyRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
+
+
+    
 
 
 
@@ -484,10 +649,12 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    #scenario_1()
+    scenario_1()
     #input("> ")
 
-    scenario_2()
+    #scenario_2()
+
+    ## CREATE ENDPOINT and then demonstrate the deletion of both events
 
 
 

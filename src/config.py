@@ -23,15 +23,11 @@ DB_FILE = os.path.join("data", "events.db")
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-TIMESTAMP_ERROR = 10
-# timestamp error allowance (in seconds) for requests
-
-
-STATE_CLEANUP_INTERVAL = 10
 
 
 
-DEFAULT_EVENT_TICKETS = 128
+
+DEFAULT_EVENT_TICKETS = 256
 
 
 # MAX_EVENT_TICKETS = 1_000_000
@@ -48,7 +44,6 @@ DEFAULT_EVENT_TTL = 2_628_00
 
 # MAX_EVENT_TTL = 31_536_000
 
-
 DATABASE_CREDS = {
     "dbname": "zeta",
     "user": "postgres",
@@ -56,6 +51,11 @@ DATABASE_CREDS = {
     "host": "localhost",
     "port": 5432,
 }
+
+
+REDIS_URL = "redis://localhost:6379/0"
+# set to None to use local memory replay prevention
+# (Redis must be active if using multiple pods/replicas)
 
 
 ###################################

@@ -14,7 +14,7 @@ import uuid
 from app.crypto.asymmetric import AKE
 
 
-
+from config import REDIS_URL
 
 
 ### encrypted ticktu must encrypt some punlic key data to validate owner
@@ -51,33 +51,36 @@ from app.crypto.asymmetric import AKE
 from threading import Lock
 
 
-
-
-
+T = TypeVar("T")
 
 
 TIMESTAMP_ERROR = 10
 # timestamp error allowance (in seconds) for requests
 
 
-ID_STORE_TOGGLE = True
-# specifies whether IDs are temporarily stored to fully prevent replay attacks
-# (set to False for a stateless system; security risk is low)
+if REDIS_URL is None:
+    STATE_CLEANUP_INTERVAL = 10
 
-STATE_CLEANUP_INTERVAL = 10
+    id_store = {}
+    store_lock = Lock()  # To handle concurrency
+    next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+
+else:
+    import redis
+
+    REDIS = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+    REDIS.ping()  # verify connectivity
 
 
 
-T = TypeVar("T")
 
 
 
 
 
 
-id_store = {}
-store_lock = Lock()  # To handle concurrency
-next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+
+
 
 
 
@@ -144,7 +147,7 @@ class Auth(BaseModel, Generic[T]):
         if abs(now - self.data.timestamp) > TIMESTAMP_ERROR:
             raise HTTPException(status_code=401, detail="Timestamp sync failure")
 
-        if ID_STORE_TOGGLE:
+        if REDIS_URL is None:
             with store_lock:
                 if self.data.id in id_store:
                     raise HTTPException(
@@ -163,6 +166,14 @@ class Auth(BaseModel, Generic[T]):
                         del id_store[key]
 
                     next_cleanup = now + STATE_CLEANUP_INTERVAL
+
+        else:
+            # Atomic first-use with TTL; returns True if key was set, None/False if it already existed
+            key = f"replay:{self.public_key}:{self.data.id}"
+            # store timestamp as value for optional auditing/debug; TTL = TIMESTAMP_ERROR
+            was_set = REDIS.set(name=key, value=str(self.data.timestamp), nx=True, ex=TIMESTAMP_ERROR)
+            if not was_set:
+                raise HTTPException(status_code=400, detail="Duplicate request ID detected.")
 
         challenge_verif(self.data)
 

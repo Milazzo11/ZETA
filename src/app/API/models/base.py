@@ -68,8 +68,12 @@ if REDIS_URL is None:
 else:
     import redis
 
-    REDIS = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-    REDIS.ping()  # verify connectivity
+    try:
+        REDIS = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+        REDIS.ping()  # verify connectivity
+
+    except Exception as e:
+        raise Exception(f"Redis connection failed: {e}") from e
 
 
 

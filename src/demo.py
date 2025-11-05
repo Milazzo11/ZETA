@@ -375,6 +375,11 @@ def scenario_2():
 
     event_id = res_json["data"]["content"]["event_id"]
 
+    print("\nNow she quickly resubmits the message to see what happens\n")
+
+    res = requests.post(SERVER_URL + "/create", json=req)
+    parse_res(res)
+
     print("\nShe also tests submitting a request with an expired timestamp\n")
 
     req["data"]["timestamp"] -= TIMESTAMP_ERROR

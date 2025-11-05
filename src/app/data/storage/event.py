@@ -3,6 +3,8 @@
 
 
 import psycopg
+from psycopg.rows import dict_row
+
 import pickle
 from typing import List, Optional
 
@@ -31,7 +33,7 @@ def load(event_id: str) -> Optional[dict]:###<-this funtionality will probably n
     ### Event return
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 # NOTE: psycopg uses %s placeholders (not ? like sqlite)
                 cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
@@ -55,7 +57,7 @@ def load_full(event_id: str, issue: bool) -> Optional[dict]:###<-this funtionali
     """
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 if issue:
                     cur.execute(
@@ -107,7 +109,7 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
 
     pattern = f"%{text}%"
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
+    with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -140,8 +142,8 @@ def create(event: dict, event_data: dict) -> None:
             # Insert into events
             cur.execute(
                 """
-                INSERT INTO events (id, name, description, tickets, issued, start, "end", private)
-                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(end)s, %(private)s);
+                INSERT INTO events (id, name, description, tickets, issued, start, finish, private)
+                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(private)s);
                 """,
                 event,
             )

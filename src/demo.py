@@ -650,9 +650,9 @@ def main():
     input("> ")
 
     scenario_1()
-    #input("> ")
+    input("> ")
 
-    #scenario_2()
+    scenario_2()
 
     ## CREATE ENDPOINT and then demonstrate the deletion of both events
 

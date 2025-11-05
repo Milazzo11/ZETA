@@ -82,7 +82,7 @@ def db_setup() -> None:
                     issued INTEGER NOT NULL,
                     start DOUBLE PRECISION NOT NULL,
                     finish DOUBLE PRECISION NOT NULL,
-                    private INTEGER NOT NULL
+                    private BOOLEAN NOT NULL
                 );
             """)
 

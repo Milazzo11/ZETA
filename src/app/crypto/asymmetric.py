@@ -1,16 +1,16 @@
 """
-Asymmetric key encryption object definition.
+Asymmetric cryptographic operations.
 
 :author: Max Milazzo
 """
 
+
 import base64
-from jwcrypto import jws, jwk
+import json
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from typing import Union
-import json
 
 
 KEY_SIZE = 4096

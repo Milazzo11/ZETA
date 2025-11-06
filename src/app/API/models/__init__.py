@@ -1,5 +1,9 @@
 """
+API models module.
+
+:author: Max Milazzo
 """
+
 
 
 from .base import Auth, Data

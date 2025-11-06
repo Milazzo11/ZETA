@@ -1,5 +1,5 @@
 """
-Symmetric key encryption object definition.
+Symmetric cryptographic operations.
 
 :author: Max Milazzo
 """

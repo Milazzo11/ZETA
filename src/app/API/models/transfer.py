@@ -1,12 +1,15 @@
-from .base import Auth
-from pydantic import BaseModel, Field
-from app.data.event import Event
-from app.util import keys
-from typing import List, Optional
-from fastapi import HTTPException
+"""
+/transfer endpoint data packet models.
 
+:author: Max Milazzo
+"""
+
+
+from .base import Auth
 from app.data.ticket import Ticket
 
+from fastapi import HTTPException
+from pydantic import BaseModel, Field
 
 
 class Transfer(BaseModel):
@@ -15,17 +18,30 @@ class Transfer(BaseModel):
 
 
 class TransferRequest(BaseModel):
+    """
+    /transfer user request.
+    """
+
     event_id: str = Field(..., description="ID of the event for which the ticket is being transferred")
     transfer: Auth[Transfer] = Field(..., description="Transfer authorization JSON (signed by current ticket owner)")
 
 
 
 class TransferResponse(BaseModel):
+    """
+    /transfer server response.
+    """
+    
     ticket: str = Field(..., description="New ticket string transferred to user")
 
     @classmethod
     def generate(self, request: TransferRequest, public_key: str) -> "TransferResponse":
         """
+        Generate the server response from a user request.
+
+        :param request: user request
+        :param public_key: user public key
+        :return: server response
         """
 
         transfer_data = request.transfer.unwrap()

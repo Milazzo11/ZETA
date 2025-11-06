@@ -1,3 +1,11 @@
+"""
+Cryptographic hash operations.
+
+:author: Max Milazzo
+"""
+
+
+
 import hashlib
 
 

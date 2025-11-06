@@ -1,57 +1,22 @@
 """
+Base authenticated data packet models.
+
+:author: Max Milazzo
 """
 
-import time
-from fastapi import HTTPException
 
-from app.data.event import Event
-from app.util import keys
-from typing import List, Union, Generic, TypeVar, Optional, Protocol
-from pydantic import BaseModel, Field
-
-import uuid
 
 from app.crypto.asymmetric import AKE
-
-
+from app.util import keys
 from config import REDIS_URL
 
-
-### encrypted ticktu must encrypt some punlic key data to validate owner
-
-
-##### events probably should use an actual SQL DB
-
-### managing bits in SQL seems easy too...
-
-
-### REQUEST OBJECTS HANDLE PARSING LOGIC; RESPONSE HANDLE ACCESSING INTERNAL SERVER OPS
-# <- move all this to __init__?
-
-
-### TODO - tickets DO NOT NEED TO BE SEND ENCRYPTED -- BECAUSE THEY WILL ENCRYPT A PUBKEY
-### SO EVEN IF ANOTHER USER GETS THE TICKET, IT WILL BE UNVERIFIABLE WITHOUT PRIVKEY ACCESS FOR SIGNATURES
-
-
-### TODO - optional instead of union in crypto lib
-
-
-### TODO - maybe figure out best Field conventions "..." vs. description= or just put the thing first
-
-
-## TODO - ensure no white charactertics in vscode linting
-
-
-### TODO - prob rework crypto libs to allow JWT and JWE for dict type (but do Union[bytes, str, dict] to generalize)
-
-
-## TODO * can model dump be used everywhere instead of to_dict?
-
-
+import time
+import uuid
+from fastapi import HTTPException
+from pydantic import BaseModel, Field
 from threading import Lock
+from typing import Generic, Self, TypeVar
 
-
-T = TypeVar("T")
 
 
 TIMESTAMP_ERROR = 10
@@ -61,67 +26,70 @@ TIMESTAMP_ERROR = 10
 if REDIS_URL is None:
     STATE_CLEANUP_INTERVAL = 10
 
-    id_store = {}
-    store_lock = Lock()  # To handle concurrency
+    nonce_store = {}
+    store_lock = Lock()
     next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+    # set up in-memory fallback for nonce key/value storage replay prevention
 
 else:
     import redis
 
     try:
         REDIS = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-        REDIS.ping()  # verify connectivity
+        REDIS.ping()
+        # set up Redis for nonce key/value storage replay prevention
 
     except Exception as e:
         raise Exception(f"Redis connection failed: {e}") from e
 
 
+T = TypeVar("T")
 
 
 
-
-
-
-
-
-
-
-
-
-
-# TODO * ID rename to "nonce" or similar is prob ideal
 class Data(BaseModel, Generic[T]):
-    id: str = Field(
-        ..., description="Unique data transaction ID"
-    )  ###default_factory makes docs say this isn't required
+    """
+    Internal signed data payload.
+    """
+
+    nonce: str = Field(..., description="Unique UUID nonce")
     timestamp: float = Field(..., description="Epoch timestamp at send time")
     content: T = Field(..., description="Data contents")
 
-    ### keep ID until message timestamp expire to prevent any form of replay attack
 
     @classmethod
-    def load(self, content: T) -> "Data":
+    def load(self, content: T) -> Self:
         """
+        Load content into a data payload.
+
+        :param content: content to be loaded
+        :return: new valid data payload with injected content
         """
 
-        return self(id=str(uuid.uuid4()), timestamp=time.time(), content=content)
+        return self(
+            id=str(uuid.uuid4()),
+            timestamp=time.time(),
+            content=content
+        )
     
-
-
-    
-
 
 
 class Auth(BaseModel, Generic[T]):
+    """
+    External packet containing signed payload, sender public key, and signature.
+    """
+
     data: Data[T] = Field(..., description="Authenticated data")
-    public_key: str = Field(..., description="Public key (to verify signature)")
-    signature: str = Field(
-        ..., description="Digital signature (JWS of the internal JSON data block)"
-    )
+    public_key: str = Field(..., description="Public key")
+    signature: str = Field(..., description="Digital signature")
 
     @classmethod
-    def load(self, data: Data[T]) -> "Auth":
+    def load(self, data: Data[T]) -> Self:
         """
+        Sign a data payload and load into an authenticated packet.
+
+        :param data: data payload
+        :return: new valid authenticated packet with injected data payload
         """
 
         cipher = AKE(private_key=keys.priv())
@@ -133,55 +101,76 @@ class Auth(BaseModel, Generic[T]):
 
 
     def unwrap(self) -> T:
+        """
+        Unwrap internal data packet raw contents.
+
+        :return: data packet contents
+        """
+
         return self.data.content
 
 
-    def authenticate(self, challenge_verif: callable = lambda _: None) -> T:
+    def authenticate(self) -> T:
         """
+        Authenticate a received packet.
+
+        :return: validated data packet contents
         """
 
-        global next_cleanup
         cipher = AKE(public_key=self.public_key)
-
-        ### TODO - (done)
-        ### verify that ID is unique within timeframe to prevent replay
-        ### call "challenge_verif" to confirm completion of additional complexity challenge (not to be implemented in this version)
-
         now = time.time()
+
         if abs(now - self.data.timestamp) > TIMESTAMP_ERROR:
             raise HTTPException(status_code=401, detail="Timestamp sync failure")
+            # check for expired timestamp
 
         if REDIS_URL is None:
+            global next_cleanup
+            
             with store_lock:
-                if self.data.id in id_store:
+                if self.data.nonce in nonce_store:
                     raise HTTPException(
-                        status_code=400, detail="Duplicate request ID detected."
+                        status_code=400,
+                        detail="Duplicate request nonce detected."
                     )
+                    # check for duplicate request nonce
 
-                id_store[self.data.id] = self.data.timestamp
+                nonce_store[self.data.nonce] = self.data.timestamp
+                # set nonce key in global storage
+
                 to_delete = []
 
                 if next_cleanup <= now:
-                    for key, value in id_store.items():
+                    for key, value in nonce_store.items():
                         if abs(now - value) > TIMESTAMP_ERROR:
                             to_delete.append(key)
+                            # mark expired nonce keys for cleanup
                             
                     for key in to_delete:
-                        del id_store[key]
+                        del nonce_store[key]
+                        # delete expired nonce keys
 
                     next_cleanup = now + STATE_CLEANUP_INTERVAL
 
         else:
-            # Atomic first-use with TTL; returns True if key was set, None/False if it already existed
-            key = f"replay:{self.public_key}:{self.data.id}"
-            # store timestamp as value for optional auditing/debug; TTL = TIMESTAMP_ERROR
-            was_set = REDIS.set(name=key, value=str(self.data.timestamp), nx=True, ex=TIMESTAMP_ERROR)
-            if not was_set:
-                raise HTTPException(status_code=400, detail="Duplicate request ID detected.")
+            key = f"replay:{self.public_key}:{self.data.nonce}"
+            was_set = REDIS.set(
+                name=key,
+                value=str(self.data.timestamp),
+                nx=True,
+                ex=TIMESTAMP_ERROR
+            )
+            # set nonce key in Redis
 
-        challenge_verif(self.data)
+            if not was_set:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Duplicate request nonce detected"
+                )
+                # check for duplicate request nonce
 
         if not cipher.verify(self.signature, self.data.model_dump(exclude_unset=True)):
             raise HTTPException(status_code=401, detail="Authentication failed")
+            # verify signature
         
         return self.data.content

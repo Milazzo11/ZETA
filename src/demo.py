@@ -547,7 +547,7 @@ def scenario_2():
         Verification(
             event_id=event_id,
             public_key=reginald_public_key,
-            metadata="Broccoli"
+            # metadata="Broccoli"
         ),
         deanna_private_key,
         deanna_public_key,

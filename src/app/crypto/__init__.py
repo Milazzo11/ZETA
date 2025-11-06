@@ -1,5 +1,5 @@
 """
-BITicket cryptography module.
+Cryptography module.
 
 :author: Max Milazzo
 """

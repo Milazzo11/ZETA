@@ -22,12 +22,6 @@ class Data(BaseModel):
     event_key: bytes = Field(default_factory=SKE.key, description="Ticket granting master key for event")
     owner_public_key: str = Field(..., description="Public key of event creator")
 
-    @classmethod
-    def from_dict(self, data: dict) -> "Data":
-        return self(
-            event_key=data.get("event_key", SKE.key()),
-            owner_public_key=data["owner_public_key"],  # This must be provided
-        )
 
 
 
@@ -63,7 +57,7 @@ class Event(BaseModel):
         data_list = []
 
         for event_dict in raw_data:
-            data_list.append(Event.from_dict(event_dict))
+            data_list.append(Event(**event_dict))
 
         return data_list
 
@@ -71,22 +65,6 @@ class Event(BaseModel):
 
 
 
-
-    ## TODO * this is prob not needed -- I think you can instantiate from dict easier (same for all from_dict)
-    @classmethod
-    def from_dict(self, data: dict) -> "Event":
-        # Manually set default values if not provided in the dictionary
-
-        return self(
-            id=data.get("id", str(uuid.uuid4())),
-            name=data["name"],  # This must be provided
-            description=data["description"],  # This must be provided
-            tickets=data.get("tickets", DEFAULT_EVENT_TICKETS),
-            issued=data.get("issued", 0),
-            start=data.get("start", time.time()),
-            finish=data.get("finish", time.time() + DEFAULT_EVENT_TTL),
-            private=data.get("private", False),
-        )
 
 
 
@@ -101,7 +79,7 @@ class Event(BaseModel):
         if dict is None:
             raise HTTPException(status_code=404, detail="Event with associated ID not found")
 
-        return self.from_dict(dict)
+        return self(**dict)
 
 
 
@@ -162,15 +140,10 @@ class EventData(BaseModel):
             raise HTTPException(status_code=404, detail="Event with associated ID not found")
         
         return self(
-            event=Event.from_dict(dict["event"]),
-            data=Data.from_dict(dict["data"])
+            event=Event(**dict["event"]),
+            data=Data(**dict["data"])
         )
     
-
-    @classmethod
-    def from_dict(self, dict) -> "EventData":
-        self.event = Event.from_dict(dict["event"])
-        self.data = Data.from_dict(dict["data"])
 
 
 

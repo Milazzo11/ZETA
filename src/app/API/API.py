@@ -1,11 +1,13 @@
 """
-High level API
+API endpoint mappings.
+
+:author: Max Milazzo
 """
 
 
 from app.API.models import *
-from fastapi import HTTPException
 
+from fastapi import HTTPException
 
 
 def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:

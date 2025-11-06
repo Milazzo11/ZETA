@@ -1,28 +1,50 @@
+"""
+/delete endpoint data packet models.
+
+:author: Max Milazzo
+"""
+
+
+
+from app.data.event import EventData
 
 from fastapi import HTTPException
-from app.data.event import EventData
-from typing import List, Union, Generic, TypeVar, Optional
 from pydantic import BaseModel, Field
 
-from app.data.ticket import Ticket
 
 
 class DeleteRequest(BaseModel):
+    """
+    /delete user request.
+    """
+    
     event_id: str = Field(..., description="ID of the event to delete")
 
 
+
 class DeleteResponse(BaseModel):
-    success: bool = Field(True, description="Deletion status")
+    """
+    /delete server response.
+    """
+
+    success: bool = Field(..., description="Deletion status")
+
 
     @classmethod
     def generate(self, request: DeleteRequest, public_key: str) -> "DeleteResponse":
         """
+        Generate the server response from a user request.
+
+        :param request: user request
+        :param public_key: user public key
+        :return: server response
         """
 
         event_data = EventData.load(request.event_id)
 
         if event_data.data.owner_public_key != public_key:
             raise HTTPException(status_code=401, detail="Only an event owner may delete his own event")
+            # confirm user is the event owner (via recorded public key)
         
         EventData.delete(request.event_id)
 

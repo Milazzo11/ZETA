@@ -1,17 +1,21 @@
-from pydantic import BaseModel, Field
+"""
+/search endpoint data packet models.
+
+:author: Max Milazzo
+"""
+
+
 from app.data.event import Event
-from app.data import event
-from typing import Optional, List
 
-from enum import Enum
+from pydantic import BaseModel, Field
+from typing import List
 
-
-
-## <- models folder with lots of diff files?  maybe use __init__ to make * import all
-####
-## these functionality blobs should prob be sepaarted somehow
 
 class SearchRequest(BaseModel):
+    """
+    /search user request.
+    """
+    
     text: str = Field(..., description="The search text or keywords to find relevant events")
     limit: int = Field(1, description="The maximum number of results to return")
     mode: str = Field("id", description='Search mode: "id" or "text"')
@@ -19,12 +23,20 @@ class SearchRequest(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    events: List[Event] = Field([], description="List of events matching search parameters")
+    """
+    /search server response.
+    """
+
+    events: List[Event] = Field(..., description="List of events matching search parameters")
 
 
     @classmethod
     def generate(self, request: SearchRequest) -> "SearchResponse":
         """
+        Generate the server response from a user request.
+
+        :param request: user request
+        :return: server response
         """
 
         if request.mode.lower() == "id":

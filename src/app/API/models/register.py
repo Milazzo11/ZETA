@@ -1,11 +1,18 @@
+"""
+/register endpoint data packet models.
+
+:author: Max Milazzo
+"""
+
+
+
 from .base import Auth
+from app.data.event import EventData
+from app.data.ticket import Ticket
+
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
-from app.data.event import EventData
-from app.data import event
-from typing import Optional, List
-
-from app.data.ticket import Ticket
+from typing import Optional
 
 
 
@@ -16,16 +23,29 @@ class Verification(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    """
+    /register user request.
+    """
+
     event_id: str = Field(..., description="ID of event to register for")
     verification: Optional[Auth[Verification]] = Field(None, description="Verification for non-public/paid events")
 
 
 class RegisterResponse(BaseModel):
+    """
+    /register server response.
+    """
+
     ticket: str = Field(..., description="Ticket string of registered user")
 
     @classmethod
     def generate(self, request: RegisterRequest, public_key: str) -> "RegisterResponse":
         """
+        Generate the server response from a user request.
+
+        :param request: user request
+        :param public_key: user public key
+        :return: server response
         """
 
         event_data = EventData.load(request.event_id)##TODO-maybe move these event data checks in ticket class

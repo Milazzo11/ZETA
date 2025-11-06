@@ -344,6 +344,61 @@ def scenario_1():
     res = requests.post(SERVER_URL + "/transfer", json=req)
     parse_res(res)
 
+    #####
+
+    print("\nevent deletion test cases\n")
+
+    # normal id search
+    req = auth_req(
+        SearchRequest(text=event_id, mode="id"),
+        beverly_private_key,
+        beverly_public_key,
+        SearchRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/search", json=req)
+    parse_res(res)
+
+    # fail
+    req = auth_req(
+        DeleteRequest(event_id=event_id),
+        jean_luc_private_key,
+        jean_luc_public_key,
+        DeleteRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/delete", json=req)
+    parse_res(res)
+
+    # success
+    req = auth_req(
+        DeleteRequest(event_id=event_id),
+        beverly_private_key,
+        beverly_public_key,
+        DeleteRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/delete", json=req)
+    parse_res(res)
+
+    # empty search
+    req = auth_req(
+        SearchRequest(text=event_id, mode="id"),
+        beverly_private_key,
+        beverly_public_key,
+        SearchRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/search", json=req)
+    parse_res(res)
+
+    # fail
+    req = auth_req(
+        DeleteRequest(event_id=event_id),
+        beverly_private_key,
+        beverly_public_key,
+        DeleteRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/delete", json=req)
+    parse_res(res)
+
+
 
 def scenario_2():
     """
@@ -641,8 +696,41 @@ def scenario_2():
     parse_res(res)
 
 
+    #### event deletion
+
+    # normal search
+    req = auth_req(
+        SearchRequest(text=event_id, mode="id"),
+        deanna_private_key,
+        deanna_public_key,
+        SearchRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/search", json=req)
+    parse_res(res)
+
+
+    # success
+    req = auth_req(
+        DeleteRequest(event_id=event_id),
+        deanna_private_key,
+        deanna_public_key,
+        DeleteRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/delete", json=req)
+    parse_res(res)
 
     
+    # empty search
+    req = auth_req(
+        SearchRequest(text=event_id, mode="id"),
+        deanna_private_key,
+        deanna_public_key,
+        SearchRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/search", json=req)
+    parse_res(res)
+
+
 
 
 
@@ -654,10 +742,11 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    scenario_1()
+    event_id_1 = scenario_1()
     input("> ")
 
-    scenario_2()
+    event_id_2 = scenario_2()
+    input("> ")
 
     ## CREATE ENDPOINT and then demonstrate the deletion of both events
 

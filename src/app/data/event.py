@@ -50,6 +50,29 @@ class Event(BaseModel):
     ## TODO* change name from private to restricted/controlled or sum
 
     ## TODO* I think this isnt needed -- obj = MyModel.parse_obj(data) load from dict
+
+
+
+
+    @staticmethod
+    def search(text: str, limit: int) -> List["Event"]:
+        """
+        """
+
+        raw_data = event_db.search(text, limit)
+        data_list = []
+
+        for event_dict in raw_data:
+            data_list.append(Event.from_dict(event_dict))
+
+        return data_list
+
+
+
+
+
+
+    ## TODO * this is prob not needed -- I think you can instantiate from dict easier (same for all from_dict)
     @classmethod
     def from_dict(self, data: dict) -> "Event":
         # Manually set default values if not provided in the dictionary
@@ -114,6 +137,16 @@ class EventData(BaseModel):
     data: Data = Field(..., description="Event data")
 
 
+
+    @staticmethod
+    def delete(event_id: str) -> None:
+        """
+        """
+
+        if not event_db.delete(event_id):
+            raise HTTPException(404, detail="Event with associated ID not found")
+
+
     @classmethod
     def load(self, event_id: str, issue: bool = False) -> "EventData":
         """
@@ -148,14 +181,3 @@ class EventData(BaseModel):
 
 
 
-def search(text: str, limit: int) -> List[Event]:
-    """
-    """
-
-    raw_data = event_db.search(text, limit)
-    data_list = []
-
-    for event_dict in raw_data:
-        data_list.append(Event.from_dict(event_dict))
-
-    return data_list

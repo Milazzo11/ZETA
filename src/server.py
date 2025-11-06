@@ -42,13 +42,15 @@ async def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
 
 @app.post(
     "/verify",
-    description="Verify (as an event owner) that a user has redeemed his ticket",
+    description="Verify that a user has redeemed his ticket",
 )
 async def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     return API.verify_redemption(data)
 
 
-
+@app.post("/delete", description="Delete an event")
+async def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
+    return API.delete_event(data)
 
 
 @app.exception_handler(HTTPException)

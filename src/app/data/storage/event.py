@@ -162,3 +162,33 @@ def create(event: dict, event_data: dict) -> None:
                 },
             )
         # context manager commits on successful exit
+
+
+
+def delete(event_id: str) -> bool:
+    """
+    """
+
+    with psycopg.connect(**DATABASE_CREDS) as conn:
+        with conn.cursor() as cur:
+            
+            # Delete from event_data first (if no FK cascade)
+            cur.execute(
+                """
+                DELETE FROM event_data
+                 WHERE event_id = %s;
+                """,
+                (event_id,)
+            )
+
+            # Delete from events table
+            cur.execute(
+                """
+                DELETE FROM events
+                 WHERE id = %s;
+                """,
+                (event_id,)
+            )
+
+            # rowcount from event delete check
+            return cur.rowcount > 0

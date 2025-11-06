@@ -89,7 +89,7 @@ else:
 
 
 
-
+# TODO * ID rename to "nonce" or similar is prob ideal
 class Data(BaseModel, Generic[T]):
     id: str = Field(
         ..., description="Unique data transaction ID"
@@ -109,7 +109,7 @@ class Data(BaseModel, Generic[T]):
 
 
     
-    ## ALSO TODO -- rn, it is required that users send everything for verification... but we don't want that
+
 
 
 class Auth(BaseModel, Generic[T]):

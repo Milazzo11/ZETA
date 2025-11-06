@@ -53,7 +53,7 @@ DATABASE_CREDS = {
 }
 
 
-REDIS_URL = "redis://localhost:6379/0"
+REDIS_URL = None # "redis://localhost:6379/0"
 # set to None to use local memory replay prevention
 # (Redis must be active if using multiple pods/replicas)
 

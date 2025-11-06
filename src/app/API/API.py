@@ -58,6 +58,14 @@ def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     return Auth[VerifyResponse].load(packet)
 
 
+def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
+    request = data.authenticate()
+    response = DeleteResponse.generate(request, data.public_key)
+
+    packet = Data[DeleteResponse].load(response)
+    return Auth[DeleteResponse].load(packet)
+
+
 def exception_handler(exception: HTTPException) -> Auth[Error]:
     response = Error.generate(exception)
 

@@ -3,7 +3,7 @@ from app.data.event import Event
 import time
 import requests
 
-from app.crypto.asymmetric import AKE
+from app.crypto.asymmetric import AKC
 from app.util import keys
 
 
@@ -27,7 +27,7 @@ def auth_req(content, private_key, public_key, request_type):
     """
 
     packet = Data[request_type].load(content)
-    cipher = AKE(private_key=private_key)
+    cipher = AKC(private_key=private_key)
 
     return Auth[request_type](
         data=packet, public_key=public_key,
@@ -46,7 +46,7 @@ def auth_res(res_json) -> bool:
     if abs(now - res_json["data"]["timestamp"]) > TIMESTAMP_ERROR:
         return False
 
-    cipher = AKE(public_key=keys.pub())
+    cipher = AKC(public_key=keys.pub())
     return cipher.verify(res_json["signature"], res_json["data"])
 
 
@@ -72,7 +72,7 @@ def scenario_1():
     print("\nBeverly creates a new event: \"Tea Party\"")
     input("> ")
 
-    cipher = AKE()
+    cipher = AKC()
     beverly_private_key = cipher.private_key
     beverly_public_key = cipher.public_key
 
@@ -84,7 +84,7 @@ def scenario_1():
                 tickets=16,
                 start=time.time(),
                 finish=time.time() + 2_628_00,
-                private=False
+                restricted=False
             )
         ),
         beverly_private_key,
@@ -101,7 +101,7 @@ def scenario_1():
     print("\nJean-Luc wants to join her, so he searches \"tea\" to find the event ID, then registers")
     input("> ")
 
-    cipher = AKE()
+    cipher = AKC()
     jean_luc_private_key = cipher.private_key
     jean_luc_public_key = cipher.public_key
 
@@ -132,7 +132,7 @@ def scenario_1():
 
     #####
 
-    cipher = AKE()
+    cipher = AKC()
     geordi_private_key = cipher.private_key
     geordi_public_key = cipher.public_key
 
@@ -406,7 +406,7 @@ def scenario_2():
 
     print("\nDeanna creates a new event: \"Counseling Session\"\n")
 
-    cipher = AKE()
+    cipher = AKC()
     deanna_private_key = cipher.private_key
     deanna_public_key = cipher.public_key
 
@@ -418,7 +418,7 @@ def scenario_2():
                 tickets=2,
                 start=time.time(),
                 finish=time.time() + 2_628_00,
-                private=True
+                restricted=True
             )
         ),
         deanna_private_key,
@@ -453,7 +453,7 @@ def scenario_2():
     print("\nWilliam gets the event ID from Deanna and he attempts to register")
     input("> ")
 
-    cipher = AKE()
+    cipher = AKC()
     william_private_key = cipher.private_key
     william_public_key = cipher.public_key
 
@@ -522,7 +522,7 @@ def scenario_2():
 
     print("\nReginald attempts to register... but obviously it doesn't work\n")
 
-    cipher = AKE()
+    cipher = AKC()
     reginald_private_key = cipher.private_key
     reginald_public_key = cipher.public_key
 
@@ -573,7 +573,7 @@ def scenario_2():
     print("Now it is Wesley's turn to register... Deanna provides him verification and he makes the request")
     input("> ")
 
-    cipher = AKE()
+    cipher = AKC()
     wesley_private_key = cipher.private_key
     wesley_public_key = cipher.public_key
 

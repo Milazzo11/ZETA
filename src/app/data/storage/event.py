@@ -142,8 +142,8 @@ def create(event: dict, event_data: dict) -> None:
             # Insert into events
             cur.execute(
                 """
-                INSERT INTO events (id, name, description, tickets, issued, start, finish, private)
-                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(private)s);
+                INSERT INTO events (id, name, description, tickets, issued, start, finish, restricted)
+                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(restricted)s);
                 """,
                 event,
             )

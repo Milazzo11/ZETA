@@ -6,7 +6,7 @@ from .storage import ticket as ticket_db
 from .event import EventData
 
 
-from app.crypto.symmetric import SKE
+from app.crypto.symmetric import SKC
 
 from fastapi import HTTPException
 
@@ -91,7 +91,7 @@ class Ticket(BaseModel):
             b64_iv, ticket = ticket.split("-")
             data = event_data.data
 
-            cipher = SKE(key=data.event_key, iv=base64.b64decode(b64_iv))
+            cipher = SKC(key=data.event_key, iv=base64.b64decode(b64_iv))
         
             decrypted_ticket_raw = cipher.decrypt(ticket)
             decrypted_ticket = json.loads(decrypted_ticket_raw)
@@ -146,7 +146,7 @@ class Ticket(BaseModel):
         """
 
         data = self.event_data.data
-        cipher = SKE(key=data.event_key)
+        cipher = SKC(key=data.event_key)
 
         ticket_data = {
             "event_id": self.event_id,

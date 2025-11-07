@@ -5,6 +5,7 @@ Asymmetric cryptographic operations.
 """
 
 
+
 import base64
 import json
 from cryptography.hazmat.backends import default_backend
@@ -13,26 +14,31 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from typing import Union
 
 
+
 KEY_SIZE = 4096
 # asymmetric key size (in bits)
 
 
-PUBLIC_EXPONENT = 65537
+PUBLIC_EXPONENT = 2 ** 16 + 1
 # standard public exponent
+
 
 
 class RSA:
     """
-    RSA encryption object.
+    RSA cryptography object.
     """
 
     @staticmethod
     def _json_canon(data: dict) -> bytes:
-        return json.dumps(
-            data,
-            separators=(",", ":"), # remove whitespace
-            sort_keys=True        # stable key order
-        ).encode()
+        """
+        Generate canonicalized JSON bytes from dictionary.
+
+        :param data: data to convert
+        :return: canonicalized JSON bytes
+        """
+
+        return json.dumps(data, separators=(",", ":"), sort_keys=True).encode()
 
 
     def __init__(
@@ -118,7 +124,9 @@ class RSA:
 
 
     def encrypt(
-        self, plaintext: Union[bytes, str], byte_output: bool = False
+        self,
+        plaintext: Union[bytes, str],
+        byte_output: bool = False
     ) -> Union[bytes, str]:
         """
         Perform RSA encryption.
@@ -126,7 +134,6 @@ class RSA:
         :param plaintext: plaintext to be encrypted
         :param byte_output: specifies whether to return encrypted data as bytes
             or base64-encoded string
-
         :return: encrypted data
         """
 
@@ -152,7 +159,9 @@ class RSA:
 
 
     def decrypt(
-        self, ciphertext: Union[bytes, str], byte_output: bool = True
+        self,
+        ciphertext: Union[bytes, str],
+        byte_output: bool = True
     ) -> Union[bytes, str]:
         """
         Perform RSA decryption.
@@ -160,7 +169,6 @@ class RSA:
         :param ciphertext: ciphertext to decrypt
         :param byte_output: specifies whether to return decrypted data as bytes
             or decoded UTF-8 string
-
         :return: decrypted data
         """
 
@@ -184,8 +192,11 @@ class RSA:
 
         return plaintext
 
+
     def sign(
-        self, message: Union[dict, bytes, str], byte_output: bool = False
+        self,
+        message: Union[dict, bytes, str],
+        byte_output: bool = False
     ) -> Union[bytes, str]:
         """
         Generate a digital signature.
@@ -193,7 +204,6 @@ class RSA:
         :param message: message text to digitally sign
         :param byte_output: specifies whether to return encrypted data as bytes
             or base64-encoded string
-
         :return: digital signature
         """
 
@@ -207,7 +217,8 @@ class RSA:
         signature = self._private_key.sign(
             message,
             padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
             ),
             hashes.SHA256()
         )
@@ -221,14 +232,15 @@ class RSA:
 
 
     def verify(
-        self, signature: Union[bytes, str], message: Union[dict, bytes, str]
+        self,
+        signature: Union[bytes, str],
+        message: Union[dict, bytes, str]
     ) -> bool:
         """
         Verify a digital signature.
 
         :param signature: the digital signature to verify
         :param message: message text that was digitally signed
-
         :return: True if valid and False otherwise
         """
 
@@ -263,5 +275,6 @@ class RSA:
             # return true if invalid
 
 
-AKE = RSA
+
+AKC = RSA
 # standard asymmetric key encryption object

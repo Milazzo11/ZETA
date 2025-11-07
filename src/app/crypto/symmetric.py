@@ -5,11 +5,13 @@ Symmetric cryptographic operations.
 """
 
 
+
 import base64
 import secrets
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from typing import Union
+
 
 
 KEY_SIZE = 256
@@ -24,9 +26,10 @@ BYTE_SIZE = 8
 # assumed byte size (in bits)
 
 
+
 class AES:
     """
-    AES (CBC) encryption object.
+    AES (CBC) cryptography object.
     """
 
     @staticmethod
@@ -51,7 +54,8 @@ class AES:
 
 
     def __init__(
-        self, key_size: int = KEY_SIZE, key: Union[bytes, None] = None,
+        self, key_size: int = KEY_SIZE,
+        key: Union[bytes, None] = None,
         iv: Union[bytes, None] = None
     ) -> None:
         """
@@ -81,7 +85,7 @@ class AES:
             # set passed key
 
         if iv is None:
-            self.iv = SKE.iv()
+            self.iv = SKC.iv()
             # generate IV if none passed
 
         else:
@@ -90,10 +94,12 @@ class AES:
 
         self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
         # initialize cipher
-        
+
 
     def encrypt(
-        self, plaintext: Union[bytes, str], byte_output: bool = False
+        self,
+        plaintext: Union[bytes, str],
+        byte_output: bool = False
     ) -> Union[bytes, str]:
         """
         Perform AES encryption.
@@ -101,7 +107,6 @@ class AES:
         :param plaintext: plaintext to be encrypted
         :param byte_output: specifies whether to return encrypted data as bytes
             or base64-encoded string
-
         :return: encrypted data
         """
 
@@ -124,10 +129,12 @@ class AES:
             # encode ciphertext as a base64 string
 
         return ciphertext
-    
+
 
     def decrypt(
-        self, ciphertext: Union[bytes, str], byte_output: bool = False
+        self,
+        ciphertext: Union[bytes, str],
+        byte_output: bool = False
     ) -> Union[bytes, str]:
         """
         Perform AES decryption.
@@ -135,7 +142,6 @@ class AES:
         :param ciphertext: ciphertext to decrypt
         :param byte_output: specifies whether to return decrypted data as bytes
             or decoded UTF-8 string
-
         :return: decrypted data
         """
 
@@ -171,6 +177,7 @@ class AES:
 
         return base64.b64encode(self.iv).decode("utf-8")
 
-        
-SKE = AES
+
+   
+SKC = AES
 # standard symmetric key encryption object

@@ -6,10 +6,11 @@ Base authenticated data packet models.
 
 
 
-from app.crypto.asymmetric import AKE
+from app.crypto.asymmetric import AKC
 from app.util import keys
 from config import REDIS_URL
 
+import math
 import time
 import uuid
 from fastapi import HTTPException
@@ -21,6 +22,11 @@ from typing import Generic, Self, TypeVar
 
 TIMESTAMP_ERROR = 10
 # timestamp error allowance (in seconds) for requests
+
+
+TTL_SECURITY_PAD = 1
+# small amount of additional time (in seconds) added to nonce store TTL for security
+# (useful if, for example, there are slight clock skews)
 
 
 if REDIS_URL is None:
@@ -58,7 +64,7 @@ class Data(BaseModel, Generic[T]):
 
 
     @classmethod
-    def load(self, content: T) -> Self:
+    def load(cls, content: T) -> Self:
         """
         Load content into a data payload.
 
@@ -66,12 +72,12 @@ class Data(BaseModel, Generic[T]):
         :return: new valid data payload with injected content
         """
 
-        return self(
-            id=str(uuid.uuid4()),
+        return cls(
+            nonce=str(uuid.uuid4()),
             timestamp=time.time(),
             content=content
         )
-    
+
 
 
 class Auth(BaseModel, Generic[T]):
@@ -83,8 +89,9 @@ class Auth(BaseModel, Generic[T]):
     public_key: str = Field(..., description="Public key")
     signature: str = Field(..., description="Digital signature")
 
+
     @classmethod
-    def load(self, data: Data[T]) -> Self:
+    def load(cls, data: Data[T]) -> Self:
         """
         Sign a data payload and load into an authenticated packet.
 
@@ -92,9 +99,9 @@ class Auth(BaseModel, Generic[T]):
         :return: new valid authenticated packet with injected data payload
         """
 
-        cipher = AKE(private_key=keys.priv())
+        cipher = AKC(private_key=keys.priv())
 
-        return self(
+        return cls(
             data=data, public_key=keys.pub(),
             signature=cipher.sign(data.model_dump())
         )
@@ -108,6 +115,65 @@ class Auth(BaseModel, Generic[T]):
         """
 
         return self.data.content
+    
+
+    def _nonce_check_naive(self) -> None:
+        """
+        Naive in-memory repeat nonce detection.
+        """
+
+        global next_cleanup
+        
+        with store_lock:
+            if self.data.nonce in nonce_store:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Duplicate request nonce detected."
+                )
+                # check for duplicate request nonce
+
+            nonce_store[self.data.nonce] = self.data.timestamp
+            # set nonce key in global storage
+
+            now = time.time()
+
+            if next_cleanup <= now:
+                to_delete = []
+
+                for key, value in nonce_store.items():
+                    if now > value + TIMESTAMP_ERROR + TTL_SECURITY_PAD:
+                        to_delete.append(key)
+                        # mark expired nonce keys for cleanup
+                        
+                for key in to_delete:
+                    del nonce_store[key]
+                    # delete expired nonce keys
+
+                next_cleanup = now + STATE_CLEANUP_INTERVAL
+
+
+    def _nonce_check_redis(self) -> None:
+        """
+        Redis-based repeat nonce detection.
+        """
+
+        key = f"replay:{self.public_key}:{self.data.nonce}"
+        expiration = (self.data.timestamp + TIMESTAMP_ERROR + TTL_SECURITY_PAD) * 1000
+
+        was_set = REDIS.set(
+            name=key,
+            value=str(self.data.timestamp),
+            nx=True,
+            pxat=int(math.ceil(expiration))
+        )
+        # set nonce key in Redis
+
+        if not was_set:
+            raise HTTPException(
+                status_code=400,
+                detail="Duplicate request nonce detected"
+            )
+            # check for duplicate request nonce
 
 
     def authenticate(self) -> T:
@@ -117,7 +183,7 @@ class Auth(BaseModel, Generic[T]):
         :return: validated data packet contents
         """
 
-        cipher = AKE(public_key=self.public_key)
+        cipher = AKC(public_key=self.public_key)
         now = time.time()
 
         if abs(now - self.data.timestamp) > TIMESTAMP_ERROR:
@@ -125,49 +191,10 @@ class Auth(BaseModel, Generic[T]):
             # check for expired timestamp
 
         if REDIS_URL is None:
-            global next_cleanup
-            
-            with store_lock:
-                if self.data.nonce in nonce_store:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Duplicate request nonce detected."
-                    )
-                    # check for duplicate request nonce
-
-                nonce_store[self.data.nonce] = self.data.timestamp
-                # set nonce key in global storage
-
-                to_delete = []
-
-                if next_cleanup <= now:
-                    for key, value in nonce_store.items():
-                        if abs(now - value) > TIMESTAMP_ERROR:
-                            to_delete.append(key)
-                            # mark expired nonce keys for cleanup
-                            
-                    for key in to_delete:
-                        del nonce_store[key]
-                        # delete expired nonce keys
-
-                    next_cleanup = now + STATE_CLEANUP_INTERVAL
+            self._nonce_check_naive()
 
         else:
-            key = f"replay:{self.public_key}:{self.data.nonce}"
-            was_set = REDIS.set(
-                name=key,
-                value=str(self.data.timestamp),
-                nx=True,
-                ex=TIMESTAMP_ERROR
-            )
-            # set nonce key in Redis
-
-            if not was_set:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Duplicate request nonce detected"
-                )
-                # check for duplicate request nonce
+            self._nonce_check_redis()
 
         if not cipher.verify(self.signature, self.data.model_dump(exclude_unset=True)):
             raise HTTPException(status_code=401, detail="Authentication failed")

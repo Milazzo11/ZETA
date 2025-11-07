@@ -1,5 +1,5 @@
 """
-Cryptography module.
+Cryptography library module.
 
 :author: Max Milazzo
 """

@@ -8,7 +8,7 @@ from config import DEFAULT_EVENT_TTL, DEFAULT_EVENT_TICKETS
 from pydantic import BaseModel, Field
 from typing import List, Optional, Tuple, Union
 
-from app.crypto.symmetric import SKE
+from app.crypto.symmetric import SKC
 
 from fastapi import HTTPException
 
@@ -19,7 +19,7 @@ from .storage import event as event_db
 
 
 class Data(BaseModel):
-    event_key: bytes = Field(default_factory=SKE.key, description="Ticket granting master key for event")
+    event_key: bytes = Field(default_factory=SKC.key, description="Ticket granting master key for event")
     owner_public_key: str = Field(..., description="Public key of event creator")
 
 
@@ -35,7 +35,7 @@ class Event(BaseModel):
     issued: int = Field(0, description="Number of tickets issued")
     start: float = Field(default_factory=lambda: time.time(), description="Epoch timestamp of event start date")
     finish: float = Field(default_factory=lambda: time.time() + DEFAULT_EVENT_TTL, description="Epoch timestamp of event end date")
-    private: bool = Field(False, description="Specifies whether event is public (open) or private (requires authorization)")
+    restricted: bool = Field(False, description="Specifies whether event is open or restricted (requires authorization)")
     # TODO - set contstriants on these values
     ## also: the select * always loading style into event doesn't seem sustainable -- but db is just poc? well idk
     ## (at most prob just make a command that specific targeted fields could add marginal efficicney)

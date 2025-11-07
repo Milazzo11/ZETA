@@ -9,8 +9,8 @@ import base64
 
 import psycopg
 
-from app.crypto.asymmetric import AKE
-from app.crypto.symmetric import SKE
+from app.crypto.asymmetric import AKC
+from app.crypto.symmetric import SKC
 from app.util import display
 from dateutil import parser
 
@@ -40,7 +40,7 @@ def key_setup() -> None:
     """
     
     try:
-        cipher = AKE()
+        cipher = AKC()
 
         with open(PRIV_KEY_FILE, "wb") as f:
             f.write(cipher.private_key)
@@ -82,7 +82,7 @@ def db_setup() -> None:
                     issued INTEGER NOT NULL,
                     start DOUBLE PRECISION NOT NULL,
                     finish DOUBLE PRECISION NOT NULL,
-                    private BOOLEAN NOT NULL
+                    restricted BOOLEAN NOT NULL
                 );
             """)
 

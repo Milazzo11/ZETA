@@ -31,7 +31,7 @@ class CreateResponse(BaseModel):
 
 
     @classmethod
-    def generate(self, request: CreateRequest, public_key: str) -> Self:
+    def generate(cls, request: CreateRequest, public_key: str) -> Self:
         """
         Generate the server response from a user request.
 
@@ -42,4 +42,4 @@ class CreateResponse(BaseModel):
 
         request.event.create(public_key)
 
-        return self(event_id=request.event.id)
+        return cls(event_id=request.event.id)

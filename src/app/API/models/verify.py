@@ -5,10 +5,12 @@
 """
 
 
+
 from app.data.ticket import Ticket
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Self
+
 
 
 class VerifyRequest(BaseModel):
@@ -16,9 +18,9 @@ class VerifyRequest(BaseModel):
     /verify user request.
     """
 
-    event_id: str = Field(..., description="ID of the event to check user verification for")
-    ticket: str = Field(..., description="Ticket string of user to check")
-    check_public_key: str = Field(..., description="Public key of the user being checked for ticket redemption")
+    event_id: str = Field(..., description="Event ID of the ticket being verified")
+    ticket: str = Field(..., description="Ticket string being verified")
+    check_public_key: str = Field(..., description="Public key of the ticket holder")
 
 
 
@@ -30,8 +32,9 @@ class VerifyResponse(BaseModel):
     verification: bool = Field(..., description="User ticket redemption status")
     metadata: Optional[str] = Field(..., description="Ticket metadata")
 
+
     @classmethod
-    def generate(self, request: VerifyRequest) -> "VerifyResponse":
+    def generate(cls, request: VerifyRequest) -> Self:
         """
         Generate the server response from a user request.
 
@@ -42,4 +45,4 @@ class VerifyResponse(BaseModel):
         ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
         verification = ticket.verify()
 
-        return self(verification=verification, metadata=ticket.metadata)
+        return cls(verification=verification, metadata=ticket.metadata)

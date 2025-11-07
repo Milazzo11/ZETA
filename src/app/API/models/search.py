@@ -5,10 +5,12 @@
 """
 
 
+
 from app.data.event import Event
 
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Self
+
 
 
 class SearchRequest(BaseModel):
@@ -31,7 +33,7 @@ class SearchResponse(BaseModel):
 
 
     @classmethod
-    def generate(self, request: SearchRequest) -> "SearchResponse":
+    def generate(cls, request: SearchRequest) -> Self:
         """
         Generate the server response from a user request.
 
@@ -45,4 +47,4 @@ class SearchResponse(BaseModel):
         else:
             events = Event.search(request.text, request.limit)
 
-        return self(events=events)
+        return cls(events=events)

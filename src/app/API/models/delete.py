@@ -10,6 +10,7 @@ from app.data.event import EventData
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
+from typing import Self
 
 
 
@@ -31,7 +32,7 @@ class DeleteResponse(BaseModel):
 
 
     @classmethod
-    def generate(self, request: DeleteRequest, public_key: str) -> "DeleteResponse":
+    def generate(cls, request: DeleteRequest, public_key: str) -> Self:
         """
         Generate the server response from a user request.
 
@@ -43,9 +44,12 @@ class DeleteResponse(BaseModel):
         event_data = EventData.load(request.event_id)
 
         if event_data.data.owner_public_key != public_key:
-            raise HTTPException(status_code=401, detail="Only an event owner may delete his own event")
+            raise HTTPException(
+                status_code=401,
+                detail="Only an event owner may delete his own event"
+            )
             # confirm user is the event owner (via recorded public key)
         
         EventData.delete(request.event_id)
 
-        return self(success=True)
+        return cls(success=True)

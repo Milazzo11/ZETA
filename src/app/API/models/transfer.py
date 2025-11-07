@@ -5,16 +5,27 @@
 """
 
 
+
 from .base import Auth
 from app.data.ticket import Ticket
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
+from typing import Self
+
 
 
 class Transfer(BaseModel):
+    """
+    Transfer validation block signed by current ticket holder.
+    """
+        
     ticket: str = Field(..., description="Ticket being transferred")
-    transfer_public_key: str = Field(..., description="Public key of the new ticket owner (user making request)")
+    transfer_public_key: str = Field(
+        ...,
+        description="Public key of the new ticket owner (requesting user)"
+    )
+
 
 
 class TransferRequest(BaseModel):
@@ -22,8 +33,11 @@ class TransferRequest(BaseModel):
     /transfer user request.
     """
 
-    event_id: str = Field(..., description="ID of the event for which the ticket is being transferred")
-    transfer: Auth[Transfer] = Field(..., description="Transfer authorization JSON (signed by current ticket owner)")
+    event_id: str = Field(..., description="Event ID of the ticket being transferred")
+    transfer: Auth[Transfer] = Field(
+        ...,
+        description="Transfer authorization block (signed by current ticket owner)"
+    )
 
 
 
@@ -32,10 +46,14 @@ class TransferResponse(BaseModel):
     /transfer server response.
     """
     
-    ticket: str = Field(..., description="New ticket string transferred to user")
+    ticket: str = Field(
+        ...,
+        description="Ticket string assigned to the new owner (requesting user)"
+    )
+
 
     @classmethod
-    def generate(self, request: TransferRequest, public_key: str) -> "TransferResponse":
+    def generate(cls, request: TransferRequest, public_key: str) -> Self:
         """
         Generate the server response from a user request.
 
@@ -48,14 +66,21 @@ class TransferResponse(BaseModel):
 
         if transfer_data.transfer_public_key != public_key:
             raise HTTPException(status_code=400, detail="Authorization key incorrect")
-        
-        old_ticket = Ticket.load(request.event_id, request.transfer.public_key, transfer_data.ticket)
-        request.transfer.authenticate()
+            # check that the transfer authorization is for the requesting user
 
+        request.transfer.authenticate()
+        # authenticate the transfer validation block
+        
+        old_ticket = Ticket.load(
+            request.event_id,
+            request.transfer.public_key,
+            transfer_data.ticket
+        )
+        
         new_ticket = Ticket.reissue(
             request.event_id, public_key, number=old_ticket.number,
             version=old_ticket.version, metadata=old_ticket.metadata
         )
         ticket = new_ticket.pack()
 
-        return self(ticket=ticket)
+        return cls(ticket=ticket)

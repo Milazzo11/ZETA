@@ -9,6 +9,7 @@
 from app.data.ticket import Ticket
 
 from pydantic import BaseModel, Field
+from typing import Self
 
 
 
@@ -17,7 +18,7 @@ class RedeemRequest(BaseModel):
     /redeem user request.
     """
 
-    event_id: str = Field(..., description="ID of the event for which the ticket is being redeemed")
+    event_id: str = Field(..., description="Event ID of the ticket being redeemed")
     ticket: str = Field(..., description="Ticket being redeemed")
 
 
@@ -31,7 +32,7 @@ class RedeemResponse(BaseModel):
 
 
     @classmethod
-    def generate(self, request: RedeemRequest, public_key: str) -> "RedeemResponse":
+    def generate(cls, request: RedeemRequest, public_key: str) -> Self:
         """
         Generate the server response from a user request.
 
@@ -43,4 +44,4 @@ class RedeemResponse(BaseModel):
         ticket = Ticket.load(request.event_id, public_key, request.ticket)
         ticket.redeem()
 
-        return self(success=True)
+        return cls(success=True)

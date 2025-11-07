@@ -1,8 +1,9 @@
 """
-API endpoint mappings.
+API request flows.
 
 :author: Max Milazzo
 """
+
 
 
 from app.API.models import *
@@ -10,7 +11,15 @@ from app.API.models import *
 from fastapi import HTTPException
 
 
+
 def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
+    """
+    /search request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = SearchResponse.generate(request)
 
@@ -19,6 +28,12 @@ def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
 
 
 def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
+    """
+    /create request flow.
+
+    :param data: user request
+    :return: server response
+    """
 
     request = data.authenticate()
     response = CreateResponse.generate(request, data.public_key)
@@ -27,8 +42,14 @@ def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     return Auth[CreateResponse].load(packet)
 
 
-
 def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
+    """
+    /register request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = RegisterResponse.generate(request, data.public_key)
 
@@ -37,6 +58,13 @@ def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
 
 
 def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
+    """
+    /transfer request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = TransferResponse.generate(request, data.public_key)
 
@@ -45,6 +73,13 @@ def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
 
 
 def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
+    """
+    /redeem request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = RedeemResponse.generate(request, data.public_key)
 
@@ -53,6 +88,13 @@ def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
 
 
 def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
+    """
+    /verify request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = VerifyResponse.generate(request)
 
@@ -61,6 +103,13 @@ def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
 
 
 def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
+    """
+    /delete request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
     request = data.authenticate()
     response = DeleteResponse.generate(request, data.public_key)
 
@@ -69,6 +118,13 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
 
 
 def exception_handler(exception: HTTPException) -> Auth[Error]:
+    """
+    Produce a signed error response.
+
+    :param exception: HTTP exception
+    :return: server response
+    """
+
     response = Error.generate(exception)
 
     packet = Data[Error].load(response)

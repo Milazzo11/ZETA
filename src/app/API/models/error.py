@@ -22,7 +22,7 @@ class Error(BaseModel):
 
 
     @classmethod
-    def generate(self, exception: HTTPException) -> Self:
+    def generate(cls, exception: HTTPException) -> Self:
         """
         Generate HTTP error server response.
 
@@ -32,4 +32,4 @@ class Error(BaseModel):
 
         detail = exception.detail
 
-        return self(error=True, detail=detail)
+        return cls(error=True, detail=detail)

@@ -46,7 +46,7 @@ else:
         # set up Redis for nonce key/value storage replay prevention
 
     except Exception as e:
-        raise Exception(f"Redis connection failed: {e}") from e
+        raise DomainError(ErrorKind.UNAVAILABLE, "redis connection failed")
 
 
 T = TypeVar("T")
@@ -126,10 +126,7 @@ class Auth(BaseModel, Generic[T]):
         
         with store_lock:
             if self.data.nonce in nonce_store:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Duplicate request nonce detected."
-                )
+                raise DomainError(ErrorKind.CONFLICT, "duplicate request nonce")
                 # check for duplicate request nonce
 
             nonce_store[self.data.nonce] = self.data.timestamp
@@ -169,10 +166,7 @@ class Auth(BaseModel, Generic[T]):
         # set nonce key in Redis
 
         if not was_set:
-            raise HTTPException(
-                status_code=400,
-                detail="Duplicate request nonce detected"
-            )
+            raise DomainError(ErrorKind.CONFLICT, "duplicate request nonce")
             # check for duplicate request nonce
 
 
@@ -183,11 +177,8 @@ class Auth(BaseModel, Generic[T]):
         :return: validated data packet contents
         """
 
-        cipher = AKC(public_key=self.public_key)
-        now = time.time()
-
-        if abs(now - self.data.timestamp) > TIMESTAMP_ERROR:
-            raise HTTPException(status_code=401, detail="Timestamp sync failure")
+        if abs(time.time() - self.data.timestamp) > TIMESTAMP_ERROR:
+            raise DomainError(ErrorKind.VALIDATION, "timestamp out of sync")
             # check for expired timestamp
 
         if REDIS_URL is None:
@@ -196,8 +187,10 @@ class Auth(BaseModel, Generic[T]):
         else:
             self._nonce_check_redis()
 
+        cipher = AKC(public_key=self.public_key)
+
         if not cipher.verify(self.signature, self.data.model_dump(exclude_unset=True)):
-            raise HTTPException(status_code=401, detail="Authentication failed")
+            raise DomainError(ErrorKind.PERMISSION, "signature verification failed")
             # verify signature
         
         return self.data.content

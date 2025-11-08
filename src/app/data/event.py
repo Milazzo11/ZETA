@@ -33,9 +33,6 @@ class EventSecrets(BaseModel):
         
         secrets = event_db.load_secrets(event_id)
 
-        if secrets is None:
-            raise HTTPException(status_code=404, detail="Event data with associated ID not found")
-
         return self(**secrets)
 
 
@@ -84,8 +81,7 @@ class Event(BaseModel):
         """
         """
 
-        if not event_db.delete(event_id):
-            raise HTTPException(404, detail="Event with associated ID not found")
+        event_db.delete(event_id)
 
 
 
@@ -95,9 +91,6 @@ class Event(BaseModel):
         """
         
         event = event_db.issue(event_id)
-
-        if event is None:
-            raise HTTPException(status_code=404, detail="Event with associated ID not found")
 
         return self(**event)
 
@@ -110,9 +103,6 @@ class Event(BaseModel):
         """
         
         event = event_db.load_event(event_id)
-
-        if event is None:
-            raise HTTPException(status_code=404, detail="Event with associated ID not found")
 
         return self(**event)
 

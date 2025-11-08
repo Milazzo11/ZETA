@@ -9,7 +9,7 @@ import pickle
 from typing import List, Optional
 
 from config import DATABASE_CREDS
-from fastapi import HTTPException
+
 
 
 
@@ -25,7 +25,7 @@ from fastapi import HTTPException
 
 
 
-def _load(query: str, event_id: str) -> Optional[dict]:
+def _load(query: str, event_id: str) -> dict:
     """
     """
 
@@ -35,15 +35,20 @@ def _load(query: str, event_id: str) -> Optional[dict]:
                 cur.execute(query, (event_id,))
                 row = cur.fetchone()
 
-                return dict(row) if row else None
+                if not row:
+                    raise DomainError(ErrorKind.NOT_FOUND, "event not found")
 
-    except Exception as e:
-        # optionally log e
-        return None
+                return dict(row)
+            
+    except DomainError:
+        raise
+
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")
 
 
 
-def issue(event_id: str) -> Optional[dict]:
+def issue(event_id: str) -> dict:
     """
     """
     
@@ -59,7 +64,7 @@ def issue(event_id: str) -> Optional[dict]:
     )
 
 
-def load_event(event_id: str) -> Optional[dict]:
+def load_event(event_id: str) -> dict:
     """
     Load an event given an event ID.
 
@@ -70,7 +75,7 @@ def load_event(event_id: str) -> Optional[dict]:
     return _load("SELECT * FROM events WHERE id = %s;", event_id)
     
 
-def load_secrets(event_id: str) -> Optional[dict]:
+def load_secrets(event_id: str) -> dict:
     """
     Load an event and associated data (besides redemption and storage bitstrings).
     """
@@ -103,20 +108,23 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
 
     pattern = f"%{text}%"
 
-    with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT *
-                  FROM events
-                 WHERE name ILIKE %s
-                 LIMIT %s;
-                """,
-                (pattern, limit),
-            )
-            rows = cur.fetchall()
-            return list(rows)  # rows are already dicts
-
+    try:
+        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM events
+                    WHERE name ILIKE %s
+                    LIMIT %s;
+                    """,
+                    (pattern, limit),
+                )
+                rows = cur.fetchall()
+                return list(rows)  # rows are already dicts
+            
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -131,31 +139,35 @@ def create(event: dict, event_secrets: dict) -> None:
 
     data_bytes = b"\x00" * int(event["tickets"])
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
-        with conn.cursor() as cur:
-            # Insert into events
-            cur.execute(
-                """
-                INSERT INTO events (id, name, description, tickets, issued, start, finish, restricted)
-                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(restricted)s);
-                """,
-                event,
-            )
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                # Insert into events
+                cur.execute(
+                    """
+                    INSERT INTO events (id, name, description, tickets, issued, start, finish, restricted)
+                    VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(restricted)s);
+                    """,
+                    event,
+                )
 
-            # Insert into event_data
-            cur.execute(
-                """
-                INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
-                VALUES (%(event_id)s, %(event_key)s, %(owner_public_key)s, %(data_bytes)s);
-                """,
-                {
-                    "event_id": event["id"],
-                    "event_key": event_secrets["event_key"],            # bytes for BYTEA
-                    "owner_public_key": event_secrets["owner_public_key"],
-                    "data_bytes": data_bytes,                         # bytes for BYTEA
-                },
-            )
-        # context manager commits on successful exit
+                # Insert into event_data
+                cur.execute(
+                    """
+                    INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
+                    VALUES (%(event_id)s, %(event_key)s, %(owner_public_key)s, %(data_bytes)s);
+                    """,
+                    {
+                        "event_id": event["id"],
+                        "event_key": event_secrets["event_key"],            # bytes for BYTEA
+                        "owner_public_key": event_secrets["owner_public_key"],
+                        "data_bytes": data_bytes,                         # bytes for BYTEA
+                    },
+                )
+            # context manager commits on successful exit
+
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -163,26 +175,30 @@ def delete(event_id: str) -> bool:
     """
     """
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
-        with conn.cursor() as cur:
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                
+                # Delete from event_data first (if no FK cascade)
+                cur.execute(
+                    """
+                    DELETE FROM event_data
+                    WHERE event_id = %s;
+                    """,
+                    (event_id,)
+                )
+
+                # Delete from events table
+                cur.execute(
+                    """
+                    DELETE FROM events
+                    WHERE id = %s;
+                    """,
+                    (event_id,)
+                )
+
+                # rowcount from event delete check
+                return cur.rowcount > 0
             
-            # Delete from event_data first (if no FK cascade)
-            cur.execute(
-                """
-                DELETE FROM event_data
-                 WHERE event_id = %s;
-                """,
-                (event_id,)
-            )
-
-            # Delete from events table
-            cur.execute(
-                """
-                DELETE FROM events
-                 WHERE id = %s;
-                """,
-                (event_id,)
-            )
-
-            # rowcount from event delete check
-            return cur.rowcount > 0
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")

@@ -117,6 +117,8 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return Auth[DeleteResponse].load(packet)
 
 
+
+## TODO - this is prob gonna have to go
 def exception_handler(exception: HTTPException) -> Auth[Error]:
     """
     Produce a signed error response.

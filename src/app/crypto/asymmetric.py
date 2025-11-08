@@ -1,5 +1,5 @@
 """
-Asymmetric cryptographic operations.
+Asymmetric cryptographic signature operations.
 
 :author: Max Milazzo
 """
@@ -26,7 +26,7 @@ PUBLIC_EXPONENT = 2 ** 16 + 1
 
 class RSA:
     """
-    RSA cryptography object.
+    RSA cryptography signing object.
     """
 
     @staticmethod
@@ -122,75 +122,6 @@ class RSA:
 
         return private_key_bytes, public_key_bytes
 
-
-    def encrypt(
-        self,
-        plaintext: Union[bytes, str],
-        byte_output: bool = False
-    ) -> Union[bytes, str]:
-        """
-        Perform RSA encryption.
-
-        :param plaintext: plaintext to be encrypted
-        :param byte_output: specifies whether to return encrypted data as bytes
-            or base64-encoded string
-        :return: encrypted data
-        """
-
-        if type(plaintext) == str:
-            plaintext = plaintext.encode("utf-8")
-            # encode plaintext string to bytes
-
-        ciphertext = self._public_key.encrypt(
-            plaintext,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-        # encrypt data
-
-        if not byte_output:
-            ciphertext = base64.b64encode(ciphertext).decode("utf-8")
-            # encode ciphertext as a base64 string
-
-        return ciphertext
-
-
-    def decrypt(
-        self,
-        ciphertext: Union[bytes, str],
-        byte_output: bool = True
-    ) -> Union[bytes, str]:
-        """
-        Perform RSA decryption.
-
-        :param ciphertext: ciphertext to decrypt
-        :param byte_output: specifies whether to return decrypted data as bytes
-            or decoded UTF-8 string
-        :return: decrypted data
-        """
-
-        if type(ciphertext) == str:
-            ciphertext = base64.b64decode(ciphertext)
-            # decode ciphertext base64 string to bytes
-
-        plaintext = self._private_key.decrypt(
-            ciphertext,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-        # decrypt data
-
-        if not byte_output:
-            plaintext = base64.b64encode(plaintext).decode("utf-8")
-            # decode plaintext as a UTF-8 string
-
-        return plaintext
 
 
     def sign(

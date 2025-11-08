@@ -58,9 +58,8 @@ class Ticket(BaseModel):
         event_secrets = EventSecrets.load(event_id)
         
         if not ticket_db.reissue(event_id, number, version):
-            raise HTTPException(status_code=400, detail="Ticket transfer failed (redeemed/transfer max reached)")
-            ### TODO* reissue increments transfer number
-            ### prob change name to transfer
+            raise DomainError(ErrorKind.CONFLICT, "ticket transfer not allowed")
+            # e.g., already redeemed or transfer limit reached
 
         ###else:
         ###    ticket_db.cancel(event_id, number)
@@ -97,23 +96,22 @@ class Ticket(BaseModel):
             ticket_string_raw = json.dumps(ticket_data)
             
             if hash.generate(ticket_string_raw) != decrypted_ticket["hash"]:
-                raise Exception
-                # go to "except" block
+                raise DomainError(ErrorKind.PERMISSION, "ticket verification failed")
         
         except Exception:
-            raise HTTPException(status_code=401, detail="Ticket verification failed")
+            raise DomainError(ErrorKind.PERMISSION, "ticket verification failed")
             ## TODO - this is here and general to prevent padding oracle attack
 
         if ticket_data["event_id"] != event_id:
-            raise HTTPException(status_code=400, detail="Ticket data does not match event ID")
+            raise DomainError(ErrorKind.VALIDATION, "ticket for different event")
             # ensure ticket event ID matches the event ID passed by client
 
         if ticket_data["public_key"] != public_key:
-            raise HTTPException(status_code=400, detail="Ticket invalid (non-matching public key)")
+            raise DomainError(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
         if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-            raise HTTPException(status_code=400, detail="Ticket version outdated (via transfer)")
+            raise DomainError(ErrorKind.CONFLICT, "ticket superseded")
         
         return self(
             event_id=event_id,
@@ -131,7 +129,7 @@ class Ticket(BaseModel):
         """
 
         if not ticket_db.redeem(self.event_id, self.number, self.version):
-            raise HTTPException(400, detail="Ticket has already been redeemed")
+            raise DomainError(ErrorKind.CONFLICT, "ticket already redeemed")
         
 
     def verify(self):

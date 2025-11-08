@@ -31,30 +31,32 @@ REDEEMED_BYTE = 2 ** (BYTE_SIZE - 1) # high order bit
 
 
 ## TODO - now that text factory bytes is set, this fucking bs isnt needed
-def _get_data_byte(event_id: str, ticket_number: int) -> Optional[int]:
+def _get_data_byte(event_id: str, ticket_number: int) -> int:
     """
     Verifies ticket redemption: return True if redeemed, else False.
     """
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT get_byte(data_bytes, %s)
-                  FROM event_data
-                 WHERE event_id = %s;
-                """,
-                (ticket_number, event_id),
-            )
-            row = cur.fetchone()
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT get_byte(data_bytes, %s)
+                    FROM event_data
+                    WHERE event_id = %s;
+                    """,
+                    (ticket_number, event_id),
+                )
+                row = cur.fetchone()
 
-    # If no event_data row exists → not redeemed (your SQLite logic implied same)
-    if row is None or row[0] is None:
-        return None
+        # If no event_data row exists → not redeemed (your SQLite logic implied same)
+        if row is None or row[0] is None:
+            raise DomainError(ErrorKind.NOT_FOUND, "event not found")
 
-    return int(row[0])
+        return int(row[0])
 
-
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -67,13 +69,20 @@ def transfer_valid_check(event_id: str, ticket_number: int, version: int) -> boo
 
     state_version = _get_data_byte(event_id, ticket_number)
 
-    if state_version is None:
-        return False
-
     # Either exact match, or matches when masked by REDEEMED_BYTE
     return (state_version == version) or ((state_version - REDEEMED_BYTE) == version)
 
 
+
+## TODO for this and other suctr data_bytes prob just get the thing and select the index manually in python
+def verify(event_id: str, ticket_number: int) -> bool:
+    """
+    Verifies ticket redemption: return True if redeemed, else False.
+    """
+
+    state_version = _get_data_byte(event_id, ticket_number)
+
+    return state_version >= REDEEMED_BYTE
 
 
 
@@ -87,37 +96,29 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     if version >= REDEEMED_BYTE - 1:
         return False
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE event_data
-                   SET data_bytes = set_byte(data_bytes, %s, %s)
-                 WHERE event_id = %s
-                   AND get_byte(data_bytes, %s) = %s
-                """,
-                (ticket_number, version + 1, event_id, ticket_number, version),
-            )
-            return cur.rowcount == 1
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE event_data
+                    SET data_bytes = set_byte(data_bytes, %s, %s)
+                    WHERE event_id = %s
+                    AND get_byte(data_bytes, %s) = %s
+                    """,
+                    (ticket_number, version + 1, event_id, ticket_number, version),
+                )
+                
+                return cur.rowcount == 1
+
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")
 
 
 
 
 
 
-
-## TODO for this and other suctr data_bytes prob just get the thing and select the index manually in python
-def verify(event_id: str, ticket_number: int) -> bool:
-    """
-    Verifies ticket redemption: return True if redeemed, else False.
-    """
-
-    state_version = _get_data_byte(event_id, ticket_number)
-
-    if state_version is None:
-        return False
-
-    return state_version >= REDEEMED_BYTE
 
 
 
@@ -137,15 +138,20 @@ def redeem(event_id: str, ticket_number: int, version: int) -> bool:
 
     new_byte = version + REDEEMED_BYTE  # 128..255
 
-    with psycopg.connect(**DATABASE_CREDS) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE event_data
-                   SET data_bytes = set_byte(data_bytes, %s, %s)
-                 WHERE event_id = %s
-                   AND get_byte(data_bytes, %s) < %s
-                """,
-                (ticket_number, new_byte, event_id, ticket_number, REDEEMED_BYTE),
-            )
-            return cur.rowcount == 1
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE event_data
+                    SET data_bytes = set_byte(data_bytes, %s, %s)
+                    WHERE event_id = %s
+                    AND get_byte(data_bytes, %s) < %s
+                    """,
+                    (ticket_number, new_byte, event_id, ticket_number, REDEEMED_BYTE),
+                )
+
+                return cur.rowcount == 1
+        
+    except Exception:
+        raise DomainError(ErrorKind.INTERNAL, "database error")

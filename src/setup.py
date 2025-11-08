@@ -1,22 +1,15 @@
 """
+Setup and information module.
+
+:author: Max Milazzo
 """
 
 
-import os
-import pickle
-import json
-import base64
+
+from app.util import display, keys
+from config import DATABASE_CREDS
 
 import psycopg
-
-from app.crypto.asymmetric import AKC
-from app.crypto.symmetric import SKC
-from app.util import display
-from dateutil import parser
-
-from config import (
-    PRIV_KEY_FILE, PUB_KEY_FILE, DATABASE_CREDS
-)
 
 
 
@@ -25,14 +18,14 @@ def app_credits() -> None:
     Application credits and information display.
     """
     
-    print("Yellowtail")
+    print("ZETA")
     print("© Maximus Milazzo\n")
     print("Create and release digital cryptographically secure tickets that users can exchange and redeem.")
     print('See the "README.txt" file for more information and to learn how it works.  Enjoy!')
     
     input()
-    
-    
+
+
 
 def key_setup() -> None:
     """
@@ -40,14 +33,8 @@ def key_setup() -> None:
     """
     
     try:
-        cipher = AKC()
+        keys.setup()
 
-        with open(PRIV_KEY_FILE, "wb") as f:
-            f.write(cipher.private_key)
-            
-        with open(PUB_KEY_FILE, "wb") as f:
-            f.write(cipher.public_key)
-            
         display.clear()
         print("SUCCESS: System keys generated")
         
@@ -97,8 +84,6 @@ def db_setup() -> None:
             """)
 
             conn.commit()
-
-        # If you were using a UI helper called `display`, keep these lines; otherwise remove them.
 
         display.clear()
         print("SUCCESS: Database setup completed")

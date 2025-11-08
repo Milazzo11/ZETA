@@ -17,8 +17,6 @@ PRIV_KEY_FILE = os.path.join("data", "priv.key")
 PUB_KEY_FILE = os.path.join("data", "pub.key")
 
 
-DB_FILE = os.path.join("data", "events.db")
-### TODO - rename var prob
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -43,6 +41,8 @@ DEFAULT_EVENT_TTL = 2_628_00
 
 
 # MAX_EVENT_TTL = 31_536_000
+
+#### keep these vvvv
 
 DATABASE_CREDS = {
     "dbname": "zeta",

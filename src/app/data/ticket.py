@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from .storage import ticket as ticket_db
-from .event import EventData
+from .event import Event, EventSecrets, EventData
 
 
 from app.crypto.symmetric import SKC
@@ -22,40 +22,40 @@ class Ticket(BaseModel):
     number: int
     version: int
     metadata: Optional[str]
-    event_data: EventData
+    event_secrets: EventSecrets
 
     ### TODO * PROBABLY split into register/reissue?
     @classmethod
     def register(
-        self, event_id: str, public_key: str,
+        cls, event_id: str, public_key: str,
         metadata: Optional[str] = None
     ) -> "Ticket":
         """
         """
 
-        event_data = EventData.load(event_id, issue=True)
-        number = event_data.next_ticket()
+        event = Event.issue(event_id)
+        event_secrets = EventSecrets.load(event_id)
 
-        return self(
+        return cls(
             event_id=event_id,
             public_key=public_key,
-            number=number,
+            number=event.next_ticket(),
             version=0,
             metadata=metadata,
-            event_data=event_data
+            event_secrets=event_secrets
         )
 
 
     ### TODO * PROBABLY split into register/reissue?
     @classmethod
     def reissue(
-        self, event_id: str, public_key: str, number: int, version: int,
+        cls, event_id: str, public_key: str, number: int, version: int,
         metadata: Optional[str] = None
     ) -> "Ticket":
         """
         """
 
-        event_data = EventData.load(event_id)
+        event_secrets = EventSecrets.load(event_id)
         
         if not ticket_db.reissue(event_id, number, version):
             raise HTTPException(status_code=400, detail="Ticket transfer failed (redeemed/transfer max reached)")
@@ -66,13 +66,13 @@ class Ticket(BaseModel):
         ###    ticket_db.cancel(event_id, number)
         ###    # cancel current ticket version
 
-        return self(
+        return cls(
             event_id=event_id,
             public_key=public_key,
             number=number,
             version=version + 1,
             metadata=metadata,
-            event_data=event_data
+            event_secrets=event_secrets
         )
 
 
@@ -86,12 +86,10 @@ class Ticket(BaseModel):
         ### gotta actually have issue number
 
         try:
-            event_data = EventData.load(event_id)
+            event_secrets = EventSecrets.load(event_id)
 
             b64_iv, ticket = ticket.split("-")
-            data = event_data.data
-
-            cipher = SKC(key=data.event_key, iv=base64.b64decode(b64_iv))
+            cipher = SKC(key=event_secrets.event_key, iv=base64.b64decode(b64_iv))
         
             decrypted_ticket_raw = cipher.decrypt(ticket)
             decrypted_ticket = json.loads(decrypted_ticket_raw)
@@ -123,7 +121,7 @@ class Ticket(BaseModel):
             number=ticket_data["number"],
             version=ticket_data["version"],
             metadata=ticket_data["metadata"],
-            event_data=event_data
+            event_secrets=event_secrets
         )
 
 
@@ -145,9 +143,6 @@ class Ticket(BaseModel):
         Convert ticket data to encrypted string.
         """
 
-        data = self.event_data.data
-        cipher = SKC(key=data.event_key)
-
         ticket_data = {
             "event_id": self.event_id,
             "public_key": self.public_key,
@@ -165,6 +160,7 @@ class Ticket(BaseModel):
         }
         verif_data_str = json.dumps(verif_data)
 
+        cipher = SKC(key=self.event_secrets.event_key)
         encrypted_string = cipher.encrypt(verif_data_str)
         ticket_string = cipher.iv_b64() + "-" + encrypted_string
 

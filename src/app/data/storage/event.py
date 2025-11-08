@@ -19,25 +19,22 @@ from fastapi import HTTPException
 
 
 ## TODO* look into possibly renaming some of these functions
+## idea - load_event, load_data, issue?
 
 
 
 
-def load(event_id: str) -> Optional[dict]:###<-this funtionality will probably need to be split up
+
+def _load(query: str, event_id: str) -> Optional[dict]:
     """
-    Load an event given an event ID.
-
-    :param event_id: event ID
-    :return: event dictionary
     """
-    ### Event return
 
     try:
         with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
-                # NOTE: psycopg uses %s placeholders (not ? like sqlite)
-                cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
+                cur.execute(query, (event_id,))
                 row = cur.fetchone()
+
                 return dict(row) if row else None
 
     except Exception as e:
@@ -45,55 +42,52 @@ def load(event_id: str) -> Optional[dict]:###<-this funtionality will probably n
         return None
 
 
-def load_full(event_id: str, issue: bool) -> Optional[dict]:###<-this funtionality will probably need to be split up
+
+def issue(event_id: str) -> Optional[dict]:
     """
-    Load an event and associated data (besides redemption and storage bitstrings).
+    """
+    
+    return _load(
+        """
+        UPDATE events
+            SET issued = issued + 1
+                WHERE id = %s
+                AND issued < tickets
+        RETURNING *;
+        """,
+        event_id
+    )
+
+
+def load_event(event_id: str) -> Optional[dict]:
+    """
+    Load an event given an event ID.
 
     :param event_id: event ID
-    :return: {
-        "event" : event dictionary,
-        "data"  : event data dictionary (exclusing bitstrings)
-    }
+    :return: event dictionary
     """
 
-    try:
-        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                if issue:
-                    cur.execute(
-                        """
-                        UPDATE events
-                           SET issued = issued + 1
-                         WHERE id = %s
-                           AND issued < tickets
-                        RETURNING *;
-                        """,
-                        (event_id,),
-                    )
-                else:
-                    cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
+    return _load("SELECT * FROM events WHERE id = %s;", event_id)
+    
 
-                event_row = cur.fetchone()
-                if event_row is None:
-                    # covers both "not found" and "sold out" when issue=True
-                    return None
+def load_secrets(event_id: str) -> Optional[dict]:
+    """
+    Load an event and associated data (besides redemption and storage bitstrings).
+    """
 
-                cur.execute(
-                    """
-                    SELECT event_key, owner_public_key
-                      FROM event_data
-                     WHERE event_id = %s;
-                    """,
-                    (event_id,),
-                )
-                data_row = cur.fetchone()
+    return _load(
+        """
+        SELECT event_key, owner_public_key
+            FROM event_data
+        WHERE event_id = %s;
+        """,
+        event_id
+    )
 
-                # relying on context manager to commit
+### TODO * exchange implementation to use these
 
-        return {"event": event_row, "data": data_row}
 
-    except Exception:
-        return None
+
 
 
 
@@ -126,7 +120,7 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
 
 
 
-def create(event: dict, event_data: dict) -> None:
+def create(event: dict, event_secrets: dict) -> None:
     """
     Create an event.
 
@@ -156,8 +150,8 @@ def create(event: dict, event_data: dict) -> None:
                 """,
                 {
                     "event_id": event["id"],
-                    "event_key": event_data["event_key"],            # bytes for BYTEA
-                    "owner_public_key": event_data["owner_public_key"],
+                    "event_key": event_secrets["event_key"],            # bytes for BYTEA
+                    "owner_public_key": event_secrets["owner_public_key"],
                     "data_bytes": data_bytes,                         # bytes for BYTEA
                 },
             )

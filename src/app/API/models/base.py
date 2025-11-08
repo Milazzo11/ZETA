@@ -127,7 +127,7 @@ class Auth(BaseModel, Generic[T]):
         with store_lock:
             if self.data.nonce in nonce_store:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=401,
                     detail="Duplicate request nonce detected."
                 )
                 # check for duplicate request nonce

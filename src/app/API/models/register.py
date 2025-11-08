@@ -7,7 +7,7 @@
 
 
 from .base import Auth
-from app.data.event import EventData
+from app.data.event import Event, EventSecrets
 from app.data.ticket import Ticket
 
 from fastapi import HTTPException
@@ -57,15 +57,17 @@ class RegisterResponse(BaseModel):
         :return: server response
         """
 
-        event_data = EventData.load(request.event_id)
+        event = Event.load(request.event_id)
+        event_secrets = EventSecrets.load(request.event_id)
+
         metadata = None
 
-        if event_data.event.restricted:
+        if event.restricted:
             if request.verification is None:
                 raise HTTPException(status_code=401, detail="No authorization")
                 # confirm verification provided
             
-            if request.verification.public_key != event_data.data.owner_public_key:
+            if request.verification.public_key != event_secrets.owner_public_key:
                 raise HTTPException(status_code=401, detail="Authorization key incorrect")
                 # confirm verification is signed by the event owner
             

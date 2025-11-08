@@ -6,7 +6,7 @@
 
 
 
-from app.data.event import EventData
+from app.data.event import Event, EventSecrets
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
@@ -41,15 +41,15 @@ class DeleteResponse(BaseModel):
         :return: server response
         """
 
-        event_data = EventData.load(request.event_id)
+        event_secrets = EventSecrets.load(request.event_id)
 
-        if event_data.data.owner_public_key != public_key:
+        if event_secrets.owner_public_key != public_key:
             raise HTTPException(
                 status_code=401,
                 detail="Only an event owner may delete his own event"
             )
             # confirm user is the event owner (via recorded public key)
         
-        EventData.delete(request.event_id)
+        Event.delete(request.event_id)
 
         return cls(success=True)

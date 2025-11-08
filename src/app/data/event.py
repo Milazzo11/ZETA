@@ -18,9 +18,25 @@ from .storage import event as event_db
 
 
 
-class Data(BaseModel):
+
+## TODO - make this the replacement for data and fix everywhere
+class EventSecrets(BaseModel):
     event_key: bytes = Field(default_factory=SKC.key, description="Ticket granting master key for event")
     owner_public_key: str = Field(..., description="Public key of event creator")
+
+
+
+    @classmethod
+    def load(self, event_id: str) -> "EventSecrets":
+        """
+        """
+        
+        secrets = event_db.load_secrets(event_id)
+
+        if secrets is None:
+            raise HTTPException(status_code=404, detail="Event data with associated ID not found")
+
+        return self(**secrets)
 
 
 
@@ -63,8 +79,27 @@ class Event(BaseModel):
 
 
 
+    @staticmethod
+    def delete(event_id: str) -> None:
+        """
+        """
+
+        if not event_db.delete(event_id):
+            raise HTTPException(404, detail="Event with associated ID not found")
 
 
+
+    @classmethod
+    def issue(self, event_id: str) -> "Event":
+        """
+        """
+        
+        event = event_db.issue(event_id)
+
+        if event is None:
+            raise HTTPException(status_code=404, detail="Event with associated ID not found")
+
+        return self(**event)
 
 
 
@@ -74,12 +109,12 @@ class Event(BaseModel):
         """
         """
         
-        dict = event_db.load(event_id)
+        event = event_db.load_event(event_id)
 
-        if dict is None:
+        if event is None:
             raise HTTPException(status_code=404, detail="Event with associated ID not found")
 
-        return self(**dict)
+        return self(**event)
 
 
 
@@ -93,8 +128,11 @@ class Event(BaseModel):
         :return: event ID
         """
 
-        event_data = Data(owner_public_key=owner_public_key)
-        event_db.create(self.model_dump(), event_data.model_dump())
+        event_secrets = EventSecrets(owner_public_key=owner_public_key)
+        event_db.create(self.model_dump(), event_secrets.model_dump())
+
+
+        
 
 
     def next_ticket(self) -> int:
@@ -102,54 +140,7 @@ class Event(BaseModel):
         """
 
         return self.issued - 1
-
-
-
-
-
-
-
-
-class EventData(BaseModel):
-    event: Event = Field(..., description="User-facing event packet")
-    data: Data = Field(..., description="Event data")
-
-
-
-    @staticmethod
-    def delete(event_id: str) -> None:
-        """
-        """
-
-        if not event_db.delete(event_id):
-            raise HTTPException(404, detail="Event with associated ID not found")
-
-
-    @classmethod
-    def load(self, event_id: str, issue: bool = False) -> "EventData":
-        """
-        """
-
-        dict = event_db.load_full(event_id, issue=issue)
-
-        
-        if dict is None:
-            if issue:
-                raise HTTPException(status_code=410, detail="All tickets registered")
-
-            raise HTTPException(status_code=404, detail="Event with associated ID not found")
-        
-        return self(
-            event=Event(**dict["event"]),
-            data=Data(**dict["data"])
-        )
     
-
-
-
-    def next_ticket(self) -> int:
-        return self.event.next_ticket()
-
 
 
 

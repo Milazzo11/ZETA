@@ -13,7 +13,6 @@ app = FastAPI()
 
 @app.post("/search", description="Search for events")
 async def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
-    print("hello")
     return API.search_events(data)
 
 
@@ -40,10 +39,7 @@ async def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
     return API.redeem_ticket(data)
 
 
-@app.post(
-    "/verify",
-    description="Verify that a user has redeemed his ticket",
-)
+@app.post("/verify", description="Verify that a user has redeemed his ticket")
 async def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     return API.verify_redemption(data)
 

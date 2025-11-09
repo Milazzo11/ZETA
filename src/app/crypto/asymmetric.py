@@ -123,7 +123,6 @@ class RSA:
         return private_key_bytes, public_key_bytes
 
 
-
     def sign(
         self,
         message: Union[dict, bytes, str],

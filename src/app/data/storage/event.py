@@ -2,25 +2,11 @@
 """
 
 
-import psycopg
-from psycopg.rows import dict_row
-
-from typing import List, Optional
-
-from config import DATABASE_CREDS
-
-
-
-from app.error.errors import DomainException, ErrorKind
 
 from .connection import pool
+from app.error.errors import DomainException, ErrorKind
 
-
-### all of these should be simple SQL queries (complex logic happens outside this module)
-
-
-## TODO* look into possibly renaming some of these functions
-## idea - load_event, load_data, issue?
+from typing import List, Optional
 
 
 
@@ -56,7 +42,7 @@ def issue(event_id: str) -> dict:
             SET issued = issued + 1
                 WHERE id = %s
                 AND issued < tickets
-        RETURNING *;
+        RETURNING issued;
         """,
         event_id
     )

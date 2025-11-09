@@ -65,7 +65,10 @@ class TransferResponse(BaseModel):
         transfer_data = request.transfer.unwrap()
 
         if transfer_data.transfer_public_key != public_key:
-            raise DomainException(ErrorKind.PERMISSION, "authorization for different user")
+            raise DomainException(
+                ErrorKind.PERMISSION,
+                "authorization for different user"
+            )
             # check that the transfer authorization is for the requesting user
 
         request.transfer.authenticate()

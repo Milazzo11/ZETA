@@ -74,11 +74,17 @@ class RegisterResponse(BaseModel):
             verif_data = request.verification.unwrap()
 
             if verif_data.event_id != request.event_id:
-                raise DomainException(ErrorKind.PERMISSION, "verification for different event")
+                raise DomainException(
+                    ErrorKind.PERMISSION,
+                    "verification for different event"
+                )
                 # confirm verification is for the correct event
             
             if verif_data.public_key != public_key:
-                raise DomainException(ErrorKind.PERMISSION, "verification for different user")
+                raise DomainException(
+                    ErrorKind.PERMISSION,
+                    "verification for different user"
+                )
                 # confirm verification is for the requesting user
 
             request.verification.authenticate()

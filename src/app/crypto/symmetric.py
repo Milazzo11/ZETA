@@ -178,6 +178,6 @@ class AES:
         return base64.b64encode(self.iv).decode("utf-8")
 
 
-   
+
 SKC = AES
 # standard symmetric key encryption object

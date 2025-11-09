@@ -1,23 +1,29 @@
+"""
+Ticket data models.
 
-from pydantic import BaseModel
-from typing import Optional
+:author: Max Milazzo
+"""
 
-from .storage import ticket as ticket_db
+
+
 from .event import Event, EventSecrets
-
-
-from app.crypto.symmetric import SKC
-
-
+from .storage import ticket as ticket_storage
 from app.crypto import hash
-import base64
-
-import json
-
+from app.crypto.symmetric import SKC
 from app.error.errors import DomainException, ErrorKind
+
+import base64
+import json
+from pydantic import BaseModel
+from typing import Optional, Self
+
 
 
 class Ticket(BaseModel):
+    """
+    User ticket data model.
+    """
+
     event_id: str
     public_key: str
     number: int
@@ -25,46 +31,47 @@ class Ticket(BaseModel):
     metadata: Optional[str]
     event_secrets: EventSecrets
 
-    ### TODO * PROBABLY split into register/reissue?
+
     @classmethod
     def register(
-        cls, event_id: str, public_key: str,
+        cls,
+        event_id: str,
+        public_key: str,
         metadata: Optional[str] = None
-    ) -> "Ticket":
+    ) -> Self:
         """
         """
 
-        event = Event.issue(event_id)
+        number = Event.issue(event_id)
         event_secrets = EventSecrets.load(event_id)
 
         return cls(
             event_id=event_id,
             public_key=public_key,
-            number=event.next_ticket(),
+            number=number,
             version=0,
             metadata=metadata,
             event_secrets=event_secrets
         )
 
 
-    ### TODO * PROBABLY split into register/reissue?
     @classmethod
     def reissue(
-        cls, event_id: str, public_key: str, number: int, version: int,
+        cls,
+        event_id: str,
+        public_key: str,
+        number: int,
+        version: int,
         metadata: Optional[str] = None
-    ) -> "Ticket":
+    ) -> Self:
         """
         """
 
         event_secrets = EventSecrets.load(event_id)
         
-        if not ticket_db.reissue(event_id, number, version):
+        if not ticket_storage.reissue(event_id, number, version):
             raise DomainException(ErrorKind.CONFLICT, "ticket transfer not allowed")
             # e.g., already redeemed or transfer limit reached
-
-        ###else:
-        ###    ticket_db.cancel(event_id, number)
-        ###    # cancel current ticket version
 
         return cls(
             event_id=event_id,
@@ -77,13 +84,9 @@ class Ticket(BaseModel):
 
 
     @classmethod
-    def load(self, event_id: str, public_key: str, ticket: str) -> "Ticket":
+    def load(cls, event_id: str, public_key: str, ticket: str) -> Self:
         """
         """
-        ### TODO - prob add better error handling for failures... especially since CBC doesnt do integrity
-
-        ##### TODO --- ticket reissue validation fail should happen right here
-        ### gotta actually have issue number
 
         try:
             event_secrets = EventSecrets.load(event_id)
@@ -111,10 +114,10 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
-        if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
+        if not ticket_storage.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
             raise DomainException(ErrorKind.CONFLICT, "ticket superseded")
         
-        return self(
+        return cls(
             event_id=event_id,
             public_key=public_key,
             number=ticket_data["number"],
@@ -129,12 +132,12 @@ class Ticket(BaseModel):
         """
         """
 
-        if not ticket_db.redeem(self.event_id, self.number, self.version):
+        if not ticket_storage.redeem(self.event_id, self.number, self.version):
             raise DomainException(ErrorKind.CONFLICT, "ticket already redeemed")
         
 
     def verify(self):
-        return ticket_db.verify(self.event_id, self.number)
+        return ticket_storage.verify(self.event_id, self.number)
 
 
     def pack(self) -> str:
@@ -164,10 +167,3 @@ class Ticket(BaseModel):
         ticket_string = cipher.iv_b64() + "-" + encrypted_string
 
         return ticket_string
-
-
-
-
-
-
-### thought -- ticket stuff seems logical to use OOP (since everything ticket related can just be handled in here)

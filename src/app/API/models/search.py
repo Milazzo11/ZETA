@@ -9,7 +9,7 @@
 from app.data.event import Event
 
 from pydantic import BaseModel, Field
-from typing import List, Self
+from typing import List, Literal, Self
 
 
 
@@ -18,9 +18,9 @@ class SearchRequest(BaseModel):
     /search user request.
     """
     
-    text: str = Field(..., description="The search text or keywords to find relevant events")
-    limit: int = Field(1, description="The maximum number of results to return")
-    mode: str = Field("id", description='Search mode: "id" or "text"')
+    text: str = Field(..., description="Search text pattern to find relevant events")
+    limit: int = Field(16, ge=1, le=64, description="Maximum number of results")
+    mode: Literal["id", "text"] = Field("id", description="Search mode")
 
 
 
@@ -29,7 +29,7 @@ class SearchResponse(BaseModel):
     /search server response.
     """
 
-    events: List[Event] = Field(..., description="List of events matching search parameters")
+    events: List[Event] = Field(..., description="List of found events")
 
 
     @classmethod

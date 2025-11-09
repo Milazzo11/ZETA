@@ -1,17 +1,28 @@
-2025-11-08 17:59:40,575 - ERROR - Exception('test')
-2025-11-08 18:00:01,041 - ERROR - Exception('test')
-2025-11-08 18:08:01,352 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-2025-11-08 18:08:06,461 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-2025-11-08 18:12:52,936 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-2025-11-08 18:17:18,257 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
+2025-11-09 12:45:34,448 - ERROR - 1 validation error for Ticket
+event_key
+  Field required [type=missing, input_value={'event_id': '1c63098e-a8...~\xdb34o\xe1o\xe4Y\xbf'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
 Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\event.py", line 42, in _load
-    return dict(row)
-ValueError: dictionary update sequence element #0 has length 36; 2 is required
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
   File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
     await app(scope, receive, sender)
   File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
@@ -26,251 +37,25 @@ Traceback (most recent call last):
   File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
     return await dependant.call(**values)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 49, in register_user
-    return API.register_user(data)
-           ~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 53, in register_user
-    response = RegisterResponse.generate(request, data.public_key)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\register.py", line 60, in generate
-    event = Event.load(request.event_id)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\event.py", line 104, in load
-    event = event_db.load_event(event_id)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\event.py", line 78, in load_event
-    event = _load("SELECT * FROM events WHERE id = %s;", event_id)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\event.py", line 45, in _load
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:15,586 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 69, in transfer_ticket
+    return API.transfer_ticket(data)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 68, in transfer_ticket
+    response = TransferResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\transfer.py", line 83, in generate
+    new_ticket = Ticket.reissue(
+        request.event_id, public_key, number=old_ticket.number,
+        version=old_ticket.version, metadata=old_ticket.metadata
     )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 67, in verify_redemption
-    return API.verify_redemption(data)
-           ~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 98, in verify_redemption
-    response = VerifyResponse.generate(request)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\verify.py", line 45, in generate
-    ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:18,030 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\ticket.py", line 122, in reissue
+    return cls(
+        event_id=event_id,
+    ...<4 lines>...
+        event_secrets=Event.get_key(event_id)
     )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 62, in redeem_ticket
-    return API.redeem_ticket(data)
-           ~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 83, in redeem_ticket
-    response = RedeemResponse.generate(request, data.public_key)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\redeem.py", line 44, in generate
-    ticket = Ticket.load(request.event_id, public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:20,463 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 67, in verify_redemption
-    return API.verify_redemption(data)
-           ~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 98, in verify_redemption
-    response = VerifyResponse.generate(request)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\verify.py", line 45, in generate
-    ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:22,861 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 67, in verify_redemption
-    return API.verify_redemption(data)
-           ~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 98, in verify_redemption
-    response = VerifyResponse.generate(request)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\verify.py", line 45, in generate
-    ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:25,273 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 62, in redeem_ticket
-    return API.redeem_ticket(data)
-           ~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 83, in redeem_ticket
-    response = RedeemResponse.generate(request, data.public_key)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\redeem.py", line 44, in generate
-    ticket = Ticket.load(request.event_id, public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
-2025-11-08 18:22:27,692 - ERROR - DomainException(kind=<ErrorKind.INTERNAL: 'internal'>, message='database error')
-Traceback (most recent call last):
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 52, in _get_data_byte
-    if row is None or row[0] is None:
-                      ~~~^^^
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\server.py", line 67, in verify_redemption
-    return API.verify_redemption(data)
-           ~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\API.py", line 98, in verify_redemption
-    response = VerifyResponse.generate(request)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\API\models\verify.py", line 45, in generate
-    ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\ticket.py", line 114, in load
-    if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 69, in transfer_valid_check
-    state_version = _get_data_byte(event_id, ticket_number)
-  File "C:\Users\Max\Desktop\Projects\Core\Yellowtail\src\app\data\storage\ticket.py", line 58, in _get_data_byte
-    raise DomainException(ErrorKind.INTERNAL, "database error") from e
-app.error.errors.DomainException: (<ErrorKind.INTERNAL: 'internal'>, 'database error')
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 1 validation error for Ticket
+event_key
+  Field required [type=missing, input_value={'event_id': '1c63098e-a8...~\xdb34o\xe1o\xe4Y\xbf'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing

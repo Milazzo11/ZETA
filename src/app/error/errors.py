@@ -1,7 +1,21 @@
-from enum import Enum
+"""
+Application custom errors.
+
+:author: Max Milazzo
+"""
+
+
+
 from dataclasses import dataclass
+from enum import Enum
+
+
 
 class ErrorKind(str, Enum):
+    """
+    Domain error kinds.
+    """
+
     VALIDATION = "validation"
     NOT_FOUND = "not_found"
     CONFLICT = "conflict"
@@ -9,7 +23,13 @@ class ErrorKind(str, Enum):
     UNAVAILABLE = "unavailable"
     INTERNAL = "internal"
 
+
+
 @dataclass
 class DomainException(Exception):
+    """
+    Custom domain error.
+    """
+
     kind: ErrorKind = ErrorKind.INTERNAL
     message: str = ""

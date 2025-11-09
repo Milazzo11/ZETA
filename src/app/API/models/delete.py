@@ -6,7 +6,7 @@
 
 
 
-from app.data.event import Event, EventSecrets
+from app.data.event import Event
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
@@ -41,9 +41,9 @@ class DeleteResponse(BaseModel):
         :return: server response
         """
 
-        event_secrets = EventSecrets.load(request.event_id)
+        owner_public_key = Event.get_owner_public_key(request.event_id)
 
-        if event_secrets.owner_public_key != public_key:
+        if owner_public_key != public_key:
             raise DomainException(ErrorKind.PERMISSION, "not event owner")
             # confirm user is the event owner (via recorded public key)
         

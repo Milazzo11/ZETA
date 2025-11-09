@@ -747,7 +747,7 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    #scenario_1()
+    scenario_1()
     input("> ")
 
     scenario_2()

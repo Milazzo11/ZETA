@@ -12,83 +12,69 @@ from typing import List, Optional
 
 
 
-def _load(query: str, event_id: str) -> Optional[dict]:
+
+
+
+
+def load_event(event_id: str) -> Optional[dict]:
     """
     """
 
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(query, (event_id,))
+                cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
                 row = cur.fetchone()
 
-                if not row:
-                    return None
-
-                return dict(row)
+                return dict(row) if row else None
 
     except Exception as e:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
-def issue(event_id: str) -> dict:
+
+def load_event_key(event_id: str) -> Optional[bytes]:
     """
     """
-    
-    event = _load(
-        """
-        UPDATE events
-            SET issued = issued + 1
-                WHERE id = %s
-                AND issued < tickets
-        RETURNING issued;
-        """,
-        event_id
-    )
 
-    if event is None:
-        raise DomainException(ErrorKind.CONFLICT, "unable to issue ticket")
-    
-    return event
+    try:
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT event_key FROM event_data WHERE event_id = %s;
+                """, (event_id,))
+                row = cur.fetchone()
+
+                if not row or row["event_key"] is None:
+                    return None
+
+                return bytes(row["event_key"])
+
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-def load_event(event_id: str) -> dict:
+
+def load_owner_public_key(event_id: str) -> Optional[str]:
     """
-    Load an event given an event ID.
-
-    :param event_id: event ID
-    :return: event dictionary
     """
 
-    event = _load("SELECT * FROM events WHERE id = %s;", event_id)
+    try:
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT owner_public_key FROM event_data WHERE event_id = %s;
+                """, (event_id,))
+                row = cur.fetchone()
 
-    if event is None:
-        raise DomainException(ErrorKind.NOT_FOUND, "event not found")
-    
-    return event
-    
+                if not row or row["owner_public_key"] is None:
+                    return None
 
-def load_secrets(event_id: str) -> dict:
-    """
-    Load an event and associated data (besides redemption and storage bitstrings).
-    """
+                return str(row["owner_public_key"])
 
-    event = _load(
-        """
-        SELECT event_key, owner_public_key
-            FROM event_data
-        WHERE event_id = %s;
-        """,
-        event_id
-    )
-
-    if event is None:
-        raise DomainException(ErrorKind.NOT_FOUND, "event not found")
-    
-    return event
-
-
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -125,7 +111,7 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
 
 
 
-def create(event: dict, event_secrets: dict) -> None:
+def create(event: dict, event_key, owner_public_key: str) -> None:
     """
     Create an event.
 
@@ -156,8 +142,8 @@ def create(event: dict, event_secrets: dict) -> None:
                     """,
                     {
                         "event_id": event["id"],
-                        "event_key": event_secrets["event_key"],            # bytes for BYTEA
-                        "owner_public_key": event_secrets["owner_public_key"],
+                        "event_key": event_key,            # bytes for BYTEA
+                        "owner_public_key": owner_public_key,
                         "data_bytes": data_bytes,                         # bytes for BYTEA
                     },
                 )

@@ -1,4 +1,7 @@
 """
+Error to HTTP code mappings.
+
+:author: Max Milazzo
 """
 
 

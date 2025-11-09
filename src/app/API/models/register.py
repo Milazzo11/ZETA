@@ -7,7 +7,7 @@
 
 
 from .base import Auth
-from app.data.event import Event, EventSecrets
+from app.data.event import Event
 from app.data.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -58,16 +58,16 @@ class RegisterResponse(BaseModel):
         """
 
         event = Event.load(request.event_id)
-        event_secrets = EventSecrets.load(request.event_id)
-
         metadata = None
 
         if event.restricted:
             if request.verification is None:
                 raise DomainException(ErrorKind.PERMISSION, "verification required")
                 # confirm verification provided
-            
-            if request.verification.public_key != event_secrets.owner_public_key:
+
+            owner_public_key = Event.get_owner_public_key(request.event_id)
+
+            if request.verification.public_key != owner_public_key:
                 raise DomainException(ErrorKind.PERMISSION, "unauthorized signer")
                 # confirm verification is signed by the event owner
             

@@ -1,5 +1,5 @@
 """
-Event data models.
+Event data model.
 
 :author: Max Milazzo
 """
@@ -8,38 +8,12 @@ Event data models.
 
 from .storage import event as event_storage
 from app.crypto.symmetric import SKC
+from app.error.errors import ErrorKind, DomainException
 
 import time
 import uuid
 from pydantic import BaseModel, Field
 from typing import List, Self
-
-
-
-class EventSecrets(BaseModel):
-    """
-    Non-public-facing event data model.
-    """
-
-    event_key: bytes = Field(
-        default_factory=SKC.key,
-        description="Ticket granting master key for event"
-    )
-    owner_public_key: str = Field(..., description="Public key of event creator")
-
-
-    @classmethod
-    def load(cls, event_id: str) -> Self:
-        """
-        Load event secrets from database.
-
-        :param event_id: ID of the event to load secrets from
-        :return: event secrets
-        """
-        
-        secrets = event_storage.load_secrets(event_id)
-
-        return cls(**secrets)
 
 
 
@@ -68,7 +42,69 @@ class Event(BaseModel):
 
 
     @staticmethod
-    def search(text: str, limit: int) -> List[Self]:
+    def get_key(event_id: str) -> bytes:
+        """
+        Get event symmetric ticket encryption key.
+
+        :param event_id: unique event identifier
+        :return: event key
+        """
+
+        key = event_storage.load_event_key(event_id)
+
+        if key is None:
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+        
+        return key
+
+
+    @staticmethod
+    def get_owner_public_key(event_id: str) -> str:
+        """
+        Get event owner public key.
+
+        :param event_id: unique event identifier
+        :return: event owner public key
+        """
+
+        public_key = event_storage.load_owner_public_key(event_id)
+
+        if public_key is None:
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+        
+        return public_key
+    
+
+    @staticmethod
+    def delete(event_id: str) -> None:
+        """
+        Delete an event.
+
+        :param event_id: unique event identifier
+        """
+
+        event_storage.delete(event_id)
+    
+
+    @classmethod
+    def load(cls, event_id: str) -> Self:
+        """
+        Load an event.
+
+        :param event_id: unique event identifier
+        :return: event model
+        """
+        
+        event = event_storage.load_event(event_id)
+
+        if event is None:
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+
+        return cls(**event)
+
+
+    @classmethod
+    def search(cls, text: str, limit: int) -> List[Self]:
         """
         Search for an event.
 
@@ -77,61 +113,16 @@ class Event(BaseModel):
         :return: list of matching events
         """
 
-        raw_data = event_storage.search(text, limit)
-        data_list = []
-
-        for event_dict in raw_data:
-            data_list.append(Event(**event_dict))
-
-        return data_list
-
-
-    @staticmethod
-    def issue(cls, event_id: str) -> int:
-        """
-        Issue a ticket for an event.
-
-        :param event_id: ID of the event to issue for
-        :return: issued ticket number
-        """
+        rows = event_storage.search(text, limit)
         
-        event = event_storage.issue(event_id)
-
-        return event["issued"] - 1
+        return [cls(**row) for row in rows]
 
 
-    @staticmethod
-    def delete(event_id: str) -> None:
+    def create(self, owner_public_key: str) -> None:
         """
-        Delete an event.
-
-        :param event_id: ID of the event to delete
-        """
-
-        event_storage.delete(event_id)
-
-
-    @classmethod
-    def load(cls, event_id: str) -> Self:
-        """
-        Load an event.
-
-        :param event_id: ID of the event to load
-        :return: event
-        """
-        
-        event = event_storage.load_event(event_id)
-
-        return cls(**event)
-
-
-    def create(self, owner_public_key: str) -> str:
-        """
-        Create an event
+        Create an event.
 
         :param owner_public_key: public key of the event creator (owner)
-        :return: ID of the new event
         """
 
-        event_secrets = EventSecrets(owner_public_key=owner_public_key)
-        event_storage.create(self.model_dump(), event_secrets.model_dump())
+        event_storage.create(self.model_dump(), SKC.key(), owner_public_key)

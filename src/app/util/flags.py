@@ -1,4 +1,7 @@
 """
+Application flags.
+
+:author: Max Milazzo
 """
 
 

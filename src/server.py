@@ -6,14 +6,44 @@ from app.API import API
 from app.API.models import *
 
 from app.error.errors import ErrorKind, DomainException
-from app.error.logger import log
 from app.error.map import HTTP_CODE
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 
-app = FastAPI()
+import json
+import logging
+import os
+from contextlib import asynccontextmanager
+from app.data.storage.connection import pool
+
+
+logger = logging.getLogger("zeta")
+logger.setLevel(logging.ERROR)
+
+# prevent duplicate handlers if module reloads
+if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
+    fh = logging.FileHandler(os.path.join("data", "error.log"), mode="a", encoding="utf-8")
+    fh.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    fh.setLevel(logging.ERROR)
+    logger.addHandler(fh)
+
+
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Server startup
+    yield
+    # Server shutdown
+    pool.close()
+    #print("Database connection pool closed.")
+
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/search", description="Search for events")
@@ -54,10 +84,14 @@ async def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return API.delete_event(data)
 
 
+
+
+
+
 @app.exception_handler(DomainException)
 async def handle_domain_error(_: Request, exception: DomainException) -> JSONResponse:
     if exception.kind == ErrorKind.INTERNAL:
-        log(str(exception))
+        logger.error(repr(exception), exc_info=exception)
 
     auth_error = API.exception_handler(exception)
 
@@ -69,7 +103,7 @@ async def handle_domain_error(_: Request, exception: DomainException) -> JSONRes
 
 @app.exception_handler(Exception)
 async def exception_handler(_: Request, exception: Exception) -> JSONResponse:
-    log(str(exception))
+    logger.error(repr(exception), exc_info=exception)
 
     auth_error = API.exception_handler(
         DomainException(

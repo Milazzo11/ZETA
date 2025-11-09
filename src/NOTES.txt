@@ -1,2 +1,1 @@
-- fix errors/error handling overall
-- prob replace httpexceptions everywhere except FastAPI "transport" layer (custom errors)
+- finish cleanup (remember Self and cls stuff)

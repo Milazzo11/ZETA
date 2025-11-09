@@ -101,7 +101,7 @@ class Ticket(BaseModel):
         
         except Exception:
             raise DomainException(ErrorKind.PERMISSION, "ticket verification failed")
-            ## TODO - this is here and general to prevent padding oracle attack
+            ## NOTE: do NOT use from e, this should be vague for security reasons
 
         if ticket_data["event_id"] != event_id:
             raise DomainException(ErrorKind.VALIDATION, "ticket for different event")

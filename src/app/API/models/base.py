@@ -8,7 +8,7 @@ Base authenticated data packet models.
 
 from app.crypto.asymmetric import AKC
 from app.error.errors import ErrorKind, DomainException
-from app.util import keys
+from app.util import flags, keys
 from config import REDIS_URL
 
 import math
@@ -29,12 +29,15 @@ TTL_SECURITY_PAD = 1
 # (useful if, for example, there are slight clock skews)
 
 
-if REDIS_URL is None:
+if flags.demo:
+    pass
+
+elif REDIS_URL is None:
     STATE_CLEANUP_INTERVAL = 10
 
     nonce_store = {}
     store_lock = Lock()
-    next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+    next_cleanup = time.monotonic() + STATE_CLEANUP_INTERVAL
     # set up in-memory fallback for nonce key/value storage replay prevention
 
 else:
@@ -46,7 +49,7 @@ else:
         # set up Redis for nonce key/value storage replay prevention
 
     except Exception as e:
-        raise DomainException(ErrorKind.UNAVAILABLE, "redis connection failed")
+        raise Exception("redis connection failed") from e
 
 
 T = TypeVar("T")
@@ -132,7 +135,7 @@ class Auth(BaseModel, Generic[T]):
             nonce_store[self.data.nonce] = self.data.timestamp
             # set nonce key in global storage
 
-            now = time.time()
+            now = time.monotonic()
 
             if next_cleanup <= now:
                 to_delete = []

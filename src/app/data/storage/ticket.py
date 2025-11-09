@@ -18,6 +18,7 @@ REDEEMED_BYTE = 2 ** (BYTE_SIZE - 1) # high order bit
 
 from app.error.errors import DomainException, ErrorKind
 
+from .connection import pool
 
 
 
@@ -35,11 +36,11 @@ def _get_data_byte(event_id: str, ticket_number: int) -> int:
     """
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT get_byte(data_bytes, %s)
+                    SELECT get_byte(data_bytes, %s) AS data_byte
                     FROM event_data
                     WHERE event_id = %s;
                     """,
@@ -48,13 +49,13 @@ def _get_data_byte(event_id: str, ticket_number: int) -> int:
                 row = cur.fetchone()
 
         # If no event_data row exists → not redeemed (your SQLite logic implied same)
-        if row is None or row[0] is None:
+        if not row or row["data_byte"] is None:
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
 
-        return int(row[0])
+        return int(row["data_byte"])
 
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -95,7 +96,7 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
         return False
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -109,8 +110,8 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
 
                 return cur.rowcount == 1
 
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -137,7 +138,7 @@ def redeem(event_id: str, ticket_number: int, version: int) -> bool:
     new_byte = version + REDEEMED_BYTE  # 128..255
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -151,5 +152,5 @@ def redeem(event_id: str, ticket_number: int, version: int) -> bool:
 
                 return cur.rowcount == 1
         
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e

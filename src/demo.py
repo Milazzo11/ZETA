@@ -1,3 +1,8 @@
+
+import app.util.flags as flags
+
+flags.demo = True
+
 from app.API.models import *
 from app.data.event import Event
 import time
@@ -11,7 +16,7 @@ import uuid
 import time
 
 
-###TODO -- this needs to actually be built well
+###NOTE -- FIGURE OUT HOW TO DO IMPORTS WITHOUT GLOBAL CODE RUNNING
 
 
 SERVER_URL = "http://localhost:8000"

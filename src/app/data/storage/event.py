@@ -13,6 +13,8 @@ from config import DATABASE_CREDS
 
 from app.error.errors import DomainException, ErrorKind
 
+from .connection import pool
+
 
 ### all of these should be simple SQL queries (complex logic happens outside this module)
 
@@ -29,7 +31,7 @@ def _load(query: str, event_id: str) -> Optional[dict]:
     """
 
     try:
-        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(query, (event_id,))
                 row = cur.fetchone()
@@ -39,8 +41,8 @@ def _load(query: str, event_id: str) -> Optional[dict]:
 
                 return dict(row)
 
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -118,7 +120,7 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
     pattern = f"%{text}%"
 
     try:
-        with psycopg.connect(**DATABASE_CREDS, row_factory=dict_row) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -132,8 +134,8 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
                 rows = cur.fetchall()
                 return list(rows)  # rows are already dicts
             
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -149,7 +151,7 @@ def create(event: dict, event_secrets: dict) -> None:
     data_bytes = b"\x00" * int(event["tickets"])
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 # Insert into events
                 cur.execute(
@@ -175,8 +177,8 @@ def create(event: dict, event_secrets: dict) -> None:
                 )
             # context manager commits on successful exit
 
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
 
@@ -185,7 +187,7 @@ def delete(event_id: str) -> bool:
     """
 
     try:
-        with psycopg.connect(**DATABASE_CREDS) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 
                 # Delete from event_data first (if no FK cascade)
@@ -209,5 +211,5 @@ def delete(event_id: str) -> bool:
                 # rowcount from event delete check
                 return cur.rowcount > 0
             
-    except Exception:
-        raise DomainException(ErrorKind.INTERNAL, "database error")
+    except Exception as e:
+        raise DomainException(ErrorKind.INTERNAL, "database error") from e

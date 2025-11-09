@@ -65,11 +65,12 @@ def db_setup() -> None:
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     description TEXT,
-                    tickets INTEGER NOT NULL,
-                    issued INTEGER NOT NULL,
+                    tickets INTEGER NOT NULL CHECK (tickets >= 0),
+                    issued INTEGER NOT NULL CHECK (issued >= 0),
                     start DOUBLE PRECISION NOT NULL,
                     finish DOUBLE PRECISION NOT NULL,
                     restricted BOOLEAN NOT NULL
+                    CHECK (issued <= tickets)
                 );
             """)
 

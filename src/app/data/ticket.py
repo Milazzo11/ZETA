@@ -61,7 +61,7 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
         
         if (byte & CANCELED_BYTE) == CANCELED_BYTE:
-            return DomainException(ErrorKind.CONFLICT, "ticket canceled")
+            raise DomainException(ErrorKind.CONFLICT, "ticket canceled")
             # check if the ticket has been canceled
             # (a ticket is canceled if the first 2 bits are on)
 

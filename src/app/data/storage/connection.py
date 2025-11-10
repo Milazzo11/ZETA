@@ -6,7 +6,6 @@ Database connection.
 
 
 
-from app.util import flags
 from config import DATABASE_CREDS
 
 from psycopg import conninfo
@@ -15,19 +14,15 @@ from psycopg_pool import ConnectionPool
 
 
 
-if flags.demo:
-    pool = None
+DSN = conninfo.make_conninfo(**DATABASE_CREDS)
 
-else:
-    DSN = conninfo.make_conninfo(**DATABASE_CREDS)
-
-    pool = ConnectionPool(
-        conninfo=DSN,
-        min_size=1,
-        max_size=5,
-        timeout=10,
-        kwargs={
-            "row_factory": dict_row
-        }
-    )
-    # initialize a database connection pool
+pool = ConnectionPool(
+    conninfo=DSN,
+    min_size=1,
+    max_size=5,
+    timeout=10,
+    kwargs={
+        "row_factory": dict_row
+    }
+)
+# initialize a database connection pool

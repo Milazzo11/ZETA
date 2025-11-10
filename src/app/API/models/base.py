@@ -8,7 +8,7 @@ Base authenticated data packet models.
 
 from app.crypto.asymmetric import AKC
 from app.error.errors import ErrorKind, DomainException
-from app.util import flags, keys
+from app.util import keys
 from config import REDIS_URL
 
 import math
@@ -29,10 +29,7 @@ TTL_SECURITY_PAD = 1
 # (useful if, for example, there are slight clock skews)
 
 
-if flags.demo:
-    pass
-
-elif REDIS_URL is None:
+if REDIS_URL is None:
     STATE_CLEANUP_INTERVAL = 10
 
     nonce_store = {}

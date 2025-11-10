@@ -101,6 +101,21 @@ def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     return Auth[VerifyResponse].load(packet)
 
 
+def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
+    """
+    /cancel request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
+    request = data.authenticate()
+    response = CancelResponse.generate(request, data.public_key)
+
+    packet = Data[CancelResponse].load(response)
+    return Auth[CancelResponse].load(packet)
+
+
 def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     """
     /delete request flow.

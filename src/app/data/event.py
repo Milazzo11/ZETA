@@ -83,8 +83,9 @@ class Event(BaseModel):
         :param event_id: unique event identifier
         """
 
-        event_store.delete(event_id)
-    
+        if not event_store.delete(event_id):
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+
 
     @classmethod
     def load(cls, event_id: str) -> Self:

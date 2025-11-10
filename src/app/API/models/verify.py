@@ -52,34 +52,26 @@ class VerifyResponse(BaseModel):
         :return: server response
         """
 
-        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-        redeemed, stamped = ticket.verify()
-
         owner_public_key = Event.get_owner_public_key(request.event_id)
+        is_event_owner = (public_key == owner_public_key)
 
-        if public_key != owner_public_key and request.stamp:
+        if not is_event_owner and request.stamp:
             raise DomainException(
                 ErrorKind.PERMISSION,
                 "only event owners may stamp tickets"
             )
+            # ensure that any ticket stamp attempts come from the event owner
 
-        if public_key == owner_public_key:
+        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
+
+        if is_event_owner:
             if request.stamp:
-                if not redeemed:
-                    raise DomainException(
-                        ErrorKind.CONFLICT,
-                        "ticket has not been redeemed"
-                    )
-                
-                if stamped:
-                    raise DomainException(
-                        ErrorKind.CONFLICT,
-                        "ticket is already stamped"
-                    )
-
-                ticket.stamp()
-                stamped = True
+                redeemed, stamped = ticket.stamp()
+            else:
+                redeemed, stamped = ticket.verify()
 
             return cls(redeemed=redeemed, stamped=stamped, metadata=ticket.metadata)
+
+        redeemed, _ = ticket.verify()
 
         return cls(redeemed=redeemed, stamped=None, metadata=ticket.metadata)

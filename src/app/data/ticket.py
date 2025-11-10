@@ -19,14 +19,16 @@ from typing import Optional, Self, Tuple
 
 
 
-REDEEMED_BYTE = 2 ** (8 - 2)
-# value added (or bitwise ORed) to ticket byte data to signal redemption
-# therefore, the redeemed byte value is: 0b01000000)
+REDEEMED_BYTE = 1 << 6
+# redeemed byte value: 0b01000000
 
 
-STAMPED_BYTE = 2 ** (8 - 1) + 2 ** (8 - 2)
-# value added (or bitwise ORed) to ticket byte data to signal stamping
-# therefore, the stamped byte value is: 0b11000000)
+STAMPED_BYTE = 1 << 7
+# stamped byte value is: 0b10000000
+
+
+CANCELED_BYTE = (1 << 7) | (1 << 6)
+# canceled byte value: 0b11000000
 
 
 
@@ -44,24 +46,29 @@ class Ticket(BaseModel):
 
 
     @staticmethod
-    def _validate_version(event_id: str, number: int, version: int) -> bool:
+    def _validate(event_id: str, number: int, version: int) -> None:
         """
-        Validate that the requester's ticket is the most recent version (untransferred).
+        Validate that the requester's ticket.
 
         :param event_id: unique event identifier
         :param number: ticket issue number
         :param version: requester's ticket version
-        :return: ticket version validity status
         """
 
-        byte = ticket_store.get_data_byte(event_id, number)
+        byte = ticket_store.load_state_byte(event_id, number)
 
         if byte is None:
-            return DomainException(ErrorKind.NOT_FOUND, "event not found")
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+        
+        if (byte & CANCELED_BYTE) == CANCELED_BYTE:
+            return DomainException(ErrorKind.CONFLICT, "ticket canceled")
+            # check if the ticket has been canceled
+            # (a ticket is canceled if the first 2 bits are on)
 
-        return (byte & (REDEEMED_BYTE - 1)) == version
-        # a ticket version is valid if the low 7 bits match the expected version
-        # (the high bit represents redemption and may be set or unset)
+        if not ((byte & (REDEEMED_BYTE - 1)) == version):
+            raise DomainException(ErrorKind.CONFLICT, "ticket superseded")
+            # check if the ticket version is up to date
+            # (a ticket version is valid if the low 6 bits match the expected version)
 
 
     @classmethod
@@ -173,12 +180,11 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
-        if not cls._validate_version(
+        cls._validate(
             event_id,
             ticket_data["number"],
             ticket_data["version"]
-        ):
-            raise DomainException(ErrorKind.CONFLICT, "ticket superseded")
+        )
         
         return cls(
             event_id=event_id,
@@ -195,27 +201,27 @@ class Ticket(BaseModel):
         Redeem the current ticket.
         """
 
-        if not ticket_store.apply_flag(
+        if not ticket_store.advance_state(
             self.event_id,
             self.number,
             self.version | REDEEMED_BYTE,
             REDEEMED_BYTE
         ):
             raise DomainException(ErrorKind.CONFLICT, "ticket redemption failed")
+        
 
-
-    def stamp(self) -> None:
+    def cancel(self) -> None:
         """
-        Stamp the current ticket.
+        Cancel the current ticket.
         """
 
-        if not ticket_store.apply_flag(
+        if not ticket_store.advance_state(
             self.event_id,
             self.number,
-            self.version | STAMPED_BYTE,
-            STAMPED_BYTE
+            self.version | CANCELED_BYTE,
+            CANCELED_BYTE
         ):
-            raise DomainException(ErrorKind.CONFLICT, "ticket stamping failed")
+            raise DomainException(ErrorKind.CONFLICT, "ticket cancelation failed")
         
 
     def verify(self) -> Tuple[bool, bool]:
@@ -225,12 +231,41 @@ class Ticket(BaseModel):
         :return: redemption status, stamped status
         """
 
-        byte = ticket_store.get_data_byte(self.event_id, self.number)
+        byte = ticket_store.load_state_byte(self.event_id, self.number)
 
         if byte is None:
-            return DomainException(ErrorKind.NOT_FOUND, "event not found")
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+        
+        if byte >= CANCELED_BYTE:
+            raise DomainException(ErrorKind.NOT_FOUND, "ticket canceled")
         
         return byte >= REDEEMED_BYTE, byte >= STAMPED_BYTE
+    
+
+    def stamp(self) -> Tuple[bool, bool]:
+        """
+        Stamp the current ticket.
+
+        :return: redemption status (True), stamped status (True)
+        """
+
+        redeemed, stamped = self.verify()
+
+        if not redeemed:
+            raise DomainException(ErrorKind.CONFLICT, "ticket has not been redeemed")
+                
+        if stamped:
+            raise DomainException(ErrorKind.CONFLICT, "ticket is already stamped")
+
+        if not ticket_store.advance_state(
+            self.event_id,
+            self.number,
+            self.version | STAMPED_BYTE,
+            STAMPED_BYTE
+        ):
+            raise DomainException(ErrorKind.CONFLICT, "ticket stamping failed")
+        
+        return True, True
 
 
     def pack(self) -> str:

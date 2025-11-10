@@ -13,14 +13,12 @@ from typing import List, Optional
 
 
 
-
-
-
-
-
-
 def load_event(event_id: str) -> Optional[dict]:
     """
+    Load event data from the database.
+
+    :param event_id: unique event identifier
+    :return: event data dictionary or None if not found
     """
 
     try:
@@ -35,18 +33,21 @@ def load_event(event_id: str) -> Optional[dict]:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-
-
 def load_event_key(event_id: str) -> Optional[bytes]:
     """
+    Load event ticket granting key from the database.
+
+    :param event_id: unique event identifier
+    :return: event ticket granting key or None if not found
     """
 
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT event_key FROM event_data WHERE event_id = %s;
-                """, (event_id,))
+                cur.execute(
+                    "SELECT event_key FROM event_data WHERE event_id = %s;",
+                    (event_id,)
+                )
                 row = cur.fetchone()
 
                 if not row or row["event_key"] is None:
@@ -58,17 +59,21 @@ def load_event_key(event_id: str) -> Optional[bytes]:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-
 def load_owner_public_key(event_id: str) -> Optional[str]:
     """
+    Load the event owner's public key from the database.
+
+    :param event_id: unique event identifier
+    :return: the event owner's public key or None if not found
     """
 
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT owner_public_key FROM event_data WHERE event_id = %s;
-                """, (event_id,))
+                cur.execute(
+                    "SELECT owner_public_key FROM event_data WHERE event_id = %s;",
+                    (event_id,)
+                )
                 row = cur.fetchone()
 
                 if not row or row["owner_public_key"] is None:
@@ -80,16 +85,13 @@ def load_owner_public_key(event_id: str) -> Optional[str]:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-
-
-def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no data
+def search(text: str, limit: int) -> List[dict]:
     """
-    Search for an event.
+    Search for an event in the database and load its data
 
-    :param text: search parameters (if text is in event name)
-    :param limit: return limit
-
-    :return: list of event dictionaries (events only, no event-associated data dictionaries)
+    :param text: text search pattern
+    :param limit: query fetch limit
+    :return: list of data dictionaries for matching events
     """
 
     pattern = f"%{text}%"
@@ -98,92 +100,103 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
         with pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    """
-                    SELECT *
-                    FROM events
-                    WHERE name ILIKE %s
-                    LIMIT %s;
-                    """,
+                    "SELECT * FROM events WHERE name ILIKE %s LIMIT %s;",
                     (pattern, limit),
                 )
                 rows = cur.fetchall()
-                return list(rows)  # rows are already dicts
+
+                return list(rows)
             
     except Exception as e:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-
-def create(event: dict, event_key, owner_public_key: str) -> None:
+def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
     """
     Create an event.
 
-    :param event: event dictionary
-    :param event_data: event data dictionary (exclusing redemption and storage
-        bitstrings, which should contain all 0 bits )
+    :param event: event data dictionary
+    :param event_key: event ticket granting key
+    :param owner_public_key: the event owner's public key
     """
 
-    data_bytes = b"\x00" * int(event["tickets"])
+    state_bytes = b"\x00" * int(event["tickets"])
 
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                # Insert into events
                 cur.execute(
                     """
-                    INSERT INTO events (id, name, description, tickets, issued, start, finish, restricted)
-                    VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(finish)s, %(restricted)s);
+                    INSERT INTO events (
+                        id,
+                        name,
+                        description,
+                        tickets,
+                        issued,
+                        start,
+                        finish,
+                        restricted
+                    )
+                    VALUES (
+                        %(id)s,
+                        %(name)s,
+                        %(description)s,
+                        %(tickets)s,
+                        %(issued)s,
+                        %(start)s,
+                        %(finish)s,
+                        %(restricted)s
+                    );
                     """,
-                    event,
+                    event
                 )
+                # create event row
 
-                # Insert into event_data
                 cur.execute(
                     """
-                    INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
-                    VALUES (%(event_id)s, %(event_key)s, %(owner_public_key)s, %(data_bytes)s);
+                    INSERT INTO event_data (
+                        event_id,
+                        event_key,
+                        owner_public_key,
+                        state_bytes
+                    )
+                    VALUES (
+                        %(event_id)s,
+                        %(event_key)s,
+                        %(owner_public_key)s,
+                        %(state_bytes)s
+                    );
                     """,
                     {
                         "event_id": event["id"],
-                        "event_key": event_key,            # bytes for BYTEA
+                        "event_key": event_key,
                         "owner_public_key": owner_public_key,
-                        "data_bytes": data_bytes,                         # bytes for BYTEA
+                        "state_bytes": state_bytes
                     },
                 )
-            # context manager commits on successful exit
+                # create non-public event data row
 
     except Exception as e:
         raise DomainException(ErrorKind.INTERNAL, "database error") from e
 
 
-
 def delete(event_id: str) -> bool:
     """
+    Delete an event.
+
+    :param event_id: unique event identifier
+    :return: deletion success status
     """
 
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                
-                # Delete from event_data first (if no FK cascade)
-                cur.execute(
-                    """
-                    DELETE FROM event_data
-                    WHERE event_id = %s;
-                    """,
-                    (event_id,)
-                )
+                cur.execute("DELETE FROM event_data WHERE event_id = %s;", (event_id,))
+                # delete non-public event data row
 
-                # Delete from events table
-                cur.execute(
-                    """
-                    DELETE FROM events
-                    WHERE id = %s;
-                    """,
-                    (event_id,)
-                )
+                cur.execute("DELETE FROM events WHERE id = %s;", (event_id,))
+                # delete event row
 
-                # rowcount from event delete check
                 return cur.rowcount > 0
             
     except Exception as e:

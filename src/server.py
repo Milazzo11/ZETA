@@ -60,15 +60,12 @@ async def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     return API.create_event(data)
 
 
-@app.post("/register", description="Register a user for an event and return his ticket")
+@app.post("/register", description="Register for an event and receieve a ticket")
 async def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
     return API.register_user(data)
 
 
-@app.post(
-    "/transfer",
-    description="Return a ticket back to the server or transfer it to another user",
-)
+@app.post("/transfer", description="Receive a ticket transfer from another user")
 async def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
     return API.transfer_ticket(data)
 
@@ -81,6 +78,11 @@ async def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
 @app.post("/verify", description="Verify that a user has redeemed his ticket")
 async def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     return API.verify_redemption(data)
+
+
+@app.post("/cancel", description="Cancel an event attendee's ticket")
+async def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
+    return API.cancel_ticket(data)
 
 
 @app.post("/delete", description="Delete an event")

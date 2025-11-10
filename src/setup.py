@@ -73,7 +73,7 @@ def db_setup() -> None:
                     event_id TEXT PRIMARY KEY,
                     event_key BYTEA NOT NULL,
                     owner_public_key TEXT NOT NULL,
-                    data_bytes BYTEA NOT NULL,
+                    state_bytes BYTEA NOT NULL,
                     FOREIGN KEY (event_id) REFERENCES events (id)
                 );
             """)

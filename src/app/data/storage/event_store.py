@@ -8,7 +8,7 @@ Event model database integrations.
 
 from .connection import pool
 
-from typing import List, Optional
+from typing import Optional
 
 
 
@@ -72,7 +72,7 @@ def load_owner_public_key(event_id: str) -> Optional[str]:
             return str(row["owner_public_key"])
 
 
-def search(text: str, limit: int) -> List[dict]:
+def search(text: str, limit: int) -> list[dict]:
     """
     Search for an event in the database and load its data
 

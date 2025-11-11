@@ -39,6 +39,7 @@ class RegisterRequest(BaseModel):
     )
 
 
+
 class RegisterResponse(BaseModel):
     """
     /register server response.

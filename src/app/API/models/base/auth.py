@@ -91,7 +91,12 @@ class Auth(BaseModel, Generic[T]):
 
 
     @classmethod
-    def load(cls, content: T) -> Self:
+    def load(
+        cls,
+        content: T,
+        private_key: str = keys.PRIVATE_KEY,
+        public_key: str = keys.PUBLIC_KEY
+    ) -> Self:
         """
         Sign a data payload and load into an authenticated packet.
 
@@ -100,10 +105,10 @@ class Auth(BaseModel, Generic[T]):
         """
 
         data = Data.load(content)
-        cipher = AKC(private_key=keys.priv())
+        cipher = AKC(private_key=private_key)
 
         return cls(
-            data=data, public_key=keys.pub(),
+            data=data, public_key=public_key,
             signature=cipher.sign(data.model_dump())
         )
 

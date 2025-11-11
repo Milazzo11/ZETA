@@ -15,7 +15,7 @@ from app.error.errors import DomainException, ErrorKind
 import base64
 import json
 from pydantic import BaseModel
-from typing import Optional, Self, Tuple
+from typing import Optional, Self
 
 
 
@@ -124,7 +124,7 @@ class Ticket(BaseModel):
 
         if version == REDEEMED_BYTE - 1:
             raise DomainException(ErrorKind.CONFLICT, "ticket transfer limit reached")
-            # tickets with version 0b01111111 can no longer be transferred
+            # tickets with version 0b00111111 can no longer be transferred
             # (version data is maxed out)
         
         if not ticket_store.reissue(event_id, number, version):
@@ -224,7 +224,7 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.CONFLICT, "ticket cancelation failed")
         
 
-    def verify(self) -> Tuple[bool, bool]:
+    def verify(self) -> tuple[bool, bool]:
         """
         Verify redemption and stamped status of the current ticket.
 
@@ -242,7 +242,7 @@ class Ticket(BaseModel):
         return byte >= REDEEMED_BYTE, byte >= STAMPED_BYTE
     
 
-    def stamp(self) -> Tuple[bool, bool]:
+    def stamp(self) -> tuple[bool, bool]:
         """
         Stamp the current ticket.
 

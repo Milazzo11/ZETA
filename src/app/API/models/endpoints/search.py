@@ -9,7 +9,7 @@
 from app.data.models.event import Event
 
 from pydantic import BaseModel, Field
-from typing import List, Literal, Self
+from typing import Literal, Self
 
 
 
@@ -29,7 +29,7 @@ class SearchResponse(BaseModel):
     /search server response.
     """
 
-    events: List[Event] = Field(..., description="List of found events")
+    events: list[Event] = Field(..., description="List of found events")
 
 
     @classmethod

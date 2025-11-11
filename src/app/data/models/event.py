@@ -13,7 +13,7 @@ from app.error.errors import ErrorKind, DomainException
 import time
 import uuid
 from pydantic import BaseModel, Field
-from typing import List, Self
+from typing import Self
 
 
 
@@ -105,7 +105,7 @@ class Event(BaseModel):
 
 
     @classmethod
-    def search(cls, text: str, limit: int) -> List[Self]:
+    def search(cls, text: str, limit: int) -> list[Self]:
         """
         Search for an event.
 

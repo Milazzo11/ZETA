@@ -6,7 +6,7 @@ Event model database integrations.
 
 
 
-from .connection import pool
+from . import connection as db
 
 from typing import Optional
 
@@ -20,7 +20,7 @@ def load_event(event_id: str) -> Optional[dict]:
     :return: event data dictionary or None if not found
     """
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
             row = cur.fetchone()
@@ -36,7 +36,7 @@ def load_event_key(event_id: str) -> Optional[bytes]:
     :return: event ticket granting key or None if not found
     """
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT event_key FROM event_data WHERE event_id = %s;",
@@ -58,7 +58,7 @@ def load_owner_public_key(event_id: str) -> Optional[str]:
     :return: the event owner's public key or None if not found
     """
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT owner_public_key FROM event_data WHERE event_id = %s;",
@@ -83,7 +83,7 @@ def search(text: str, limit: int) -> list[dict]:
 
     pattern = f"%{text}%"
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT * FROM events WHERE name ILIKE %s LIMIT %s;",
@@ -105,7 +105,7 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
 
     state_bytes = b"\x00" * int(event["tickets"])
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -167,7 +167,7 @@ def delete(event_id: str) -> bool:
     :return: deletion success status
     """
 
-    with pool.connection() as conn:
+    with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM events WHERE id = %s;", (event_id,))
             # delete event row

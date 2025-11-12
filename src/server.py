@@ -7,17 +7,18 @@ ZETA Server.
 
 
 from app.API import API
-from app.API.models.base import Auth, Error
+from app.API.models.base import Auth
 from app.API.models.endpoints import *
-from app.data.storage.connection import pool
+from app.data.storage import connection
 from app.error.errors import ErrorKind, DomainException
 from app.error.map import HTTP_CODE
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from config import REDIS_URL
 
 import logging
 import os
 from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from typing import AsyncIterator
 
 
@@ -36,6 +37,12 @@ if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
     logger.addHandler(fh)
     # initialize application logger
 
+Auth.start_service(REDIS_URL)
+# start the authentication nonce-tracker service
+
+connection.start_pool()
+# initialize the database connection pool
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -44,7 +51,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """
 
     yield
-    pool.close()
+    connection.stop_pool()
 
 
 app = FastAPI(lifespan=lifespan)

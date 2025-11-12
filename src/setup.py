@@ -55,7 +55,8 @@ def db_setup() -> None:
             conn.execute("DROP TABLE IF EXISTS event_data;")
             conn.execute("DROP TABLE IF EXISTS events;")
 
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -67,9 +68,11 @@ def db_setup() -> None:
                     restricted BOOLEAN NOT NULL
                     CHECK (issued <= tickets)
                 );
-            """)
+                """
+            )
 
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS event_data (
                     event_id TEXT PRIMARY KEY,
                     event_key BYTEA NOT NULL,
@@ -77,7 +80,8 @@ def db_setup() -> None:
                     state_bytes BYTEA NOT NULL,
                     FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE
                 );
-            """)
+                """
+            )
 
             conn.commit()
 

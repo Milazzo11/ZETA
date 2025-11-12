@@ -9,14 +9,12 @@ Base authenticated data packet models.
 from app.crypto.asymmetric import AKC
 from app.error.errors import ErrorKind, DomainException
 from app.util import keys
-from config import REDIS_URL
 
 import math
 import time
 import uuid
 from pydantic import BaseModel, Field
-from threading import Lock
-from typing import Generic, Self, TypeVar
+from typing import Generic, Optional, Self, TypeVar
 
 
 
@@ -29,24 +27,15 @@ TTL_SECURITY_PAD = 1
 # (useful if, for example, there are slight clock skews)
 
 
-if REDIS_URL is None:
-    STATE_CLEANUP_INTERVAL = 10
+REDIS = None
+# Redis connection
 
-    nonce_store = {}
-    store_lock = Lock()
-    next_cleanup = time.monotonic() + STATE_CLEANUP_INTERVAL
-    # set up in-memory fallback for nonce key/value storage replay prevention
 
-else:
-    import redis
-
-    try:
-        REDIS = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-        REDIS.ping()
-        # set up Redis for nonce key/value storage replay prevention
-
-    except Exception as e:
-        raise Exception("redis connection failed") from e
+STATE_CLEANUP_INTERVAL = 10
+nonce_store = None
+store_lock = None
+next_cleanup = None
+# in-memory fallback global definitions
 
 
 T = TypeVar("T")
@@ -88,6 +77,37 @@ class Auth(BaseModel, Generic[T]):
     data: Data[T] = Field(..., description="Authenticated data")
     public_key: str = Field(..., description="Public key")
     signature: str = Field(..., description="Digital signature")
+
+
+    @staticmethod
+    def start_service(redis_url: Optional[str]) -> None:
+        """
+        Start the authentication nonce-tracker service.
+
+        :param redis_url: Reddis connection URL string or None to use in-memory service
+        """
+
+        if redis_url is None:
+            from threading import Lock
+            global nonce_store, store_lock, next_cleanup
+
+            nonce_store = {}
+            store_lock = Lock()
+            next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
+            # set up in-memory fallback for nonce key/value storage replay prevention
+
+            return
+
+        import redis
+        global REDIS
+
+        try:
+            REDIS = redis.Redis.from_url(redis_url, decode_responses=True)
+            REDIS.ping()
+            # set up Redis for nonce key/value storage replay prevention
+
+        except Exception as e:
+            raise Exception("redis connection failed") from e
 
 
     @classmethod
@@ -138,7 +158,7 @@ class Auth(BaseModel, Generic[T]):
             nonce_store[self.data.nonce] = self.data.timestamp
             # set nonce key in global storage
 
-            now = time.monotonic()
+            now = time.time()
 
             if next_cleanup <= now:
                 to_delete = []
@@ -161,13 +181,13 @@ class Auth(BaseModel, Generic[T]):
         """
 
         key = f"replay:{self.public_key}:{self.data.nonce}"
-        expiration = (self.data.timestamp + TIMESTAMP_ERROR + TTL_SECURITY_PAD) * 1000
+        expiration = self.data.timestamp + TIMESTAMP_ERROR + TTL_SECURITY_PAD
 
         was_set = REDIS.set(
             name=key,
             value=str(self.data.timestamp),
             nx=True,
-            pxat=int(math.ceil(expiration))
+            ex=int(math.ceil(expiration - time.time()))
         )
         # set nonce key in Redis
 
@@ -187,7 +207,7 @@ class Auth(BaseModel, Generic[T]):
             raise DomainException(ErrorKind.VALIDATION, "timestamp out of sync")
             # check for expired timestamp
 
-        if REDIS_URL is None:
+        if REDIS is None:
             self._nonce_check_naive()
 
         else:

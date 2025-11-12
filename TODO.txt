@@ -1,2 +1,3 @@
-- prob move data/event.py and ticket.py into data/models
+- init pool instead of auto-pool init?
+- also init redis/in mem version funcs and call from server
 - clean up demo code (and improve)

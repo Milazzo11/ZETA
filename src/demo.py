@@ -6,25 +6,19 @@ Demo/testing module.
 
 
 
-from app.data.storage.connection import pool
-pool.close()
-
-import config
-config.REDIS_URL = None
-
 from app.API.models.base import Auth, Error
 from app.API.models.endpoints import *
 from app.API.models.endpoints.register import Verification
 from app.API.models.endpoints.transfer import Transfer
 from app.data.models.event import Event
 from app.crypto.asymmetric import AKC
-from app.util import keys, display
+from app.util import display
 
 import time
 import uuid
 import copy
 import requests
-from typing import Type, TypeVar, Any
+from typing import TypeVar
 
 
 
@@ -36,9 +30,7 @@ TIMESTAMP_ERROR = 10
 # timestamp error allowance for response
 
 
-# Your Pydantic request model type variable
 T = TypeVar("T")
-
 
 
 def output(req: dict, res: Auth[T], code: int) -> None:
@@ -62,6 +54,9 @@ def output(req: dict, res: Auth[T], code: int) -> None:
 
 print("ZETA Demo (Condensed Story Mode)")
 input("> Press Enter to begin... ")
+
+Auth.start_service(redis_url=None)
+# start the authentication nonce-tracker service (in-memory version)
 
 display.clear()
 
@@ -189,7 +184,7 @@ print(
     "Wesley isn't willing to give up so easily, though... so he steals " \
     "his mother's old ticket and digital signature credentials while she " \
     "is distracted and manages to slip out before his scheduled beating can " \
-    "begin.  Oblivious to the fact that the ticket he has was transrrered" \
+    "begin.  Oblivious to the fact that the ticket he has was transrrered " \
     "away, he shows up to the recital and attempts to redeem it."
 )
 
@@ -213,16 +208,24 @@ print(
 )
 
 req = Auth[TransferRequest].load(
-    Transfer(
-        ticket=beverly_ticket,
-        transfer_public_key=wesley.public_key
-    ), 
-    beverly.private_key,
-    beverly.public_key
+    TransferRequest(
+        event_id=event_id,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=beverly_ticket,
+                transfer_public_key=wesley.public_key
+            ),
+            beverly.private_key,
+            beverly.public_key
+        )
+    ),
+    wesley.private_key,
+    wesley.public_key
 ).model_dump()
 res = requests.post(SERVER_URL + "/transfer", json=req)
 output(req, Auth[Error](**res.json()), res.status_code)
 
+"""
 ##########
 
 # Wesley does /verify to see if there is anyone who hasn't redeemed (explain why it exists)
@@ -665,3 +668,4 @@ res = requests.post(SERVER_URL + "/search", json=req); s2 = parse_res(res)
 show_req_res("Search by ID AFTER delete (gone)", req, s2)
 
 print("\nTHE END — Demo complete.\n")
+"""

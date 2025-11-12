@@ -14,15 +14,34 @@ from psycopg_pool import ConnectionPool
 
 
 
-DSN = conninfo.make_conninfo(**DATABASE_CREDS)
+pool = None
+# database connection pool
 
-pool = ConnectionPool(
-    conninfo=DSN,
-    min_size=1,
-    max_size=5,
-    timeout=10,
-    kwargs={
-        "row_factory": dict_row
-    }
-)
-# initialize a database connection pool
+
+
+def start_pool() -> None:
+    """
+    Initialize a database connection pool
+    """
+
+    global pool
+
+    pool = ConnectionPool(
+        conninfo=conninfo.make_conninfo(**DATABASE_CREDS),
+        min_size=1,
+        max_size=5,
+        timeout=10,
+        kwargs={
+            "row_factory": dict_row
+        }
+    )
+
+
+def stop_pool() -> None:
+    """
+    Close a database connection pool.
+    """
+
+    global pool
+
+    pool.close()

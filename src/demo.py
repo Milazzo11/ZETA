@@ -33,6 +33,7 @@ TIMESTAMP_ERROR = 10
 T = TypeVar("T")
 
 
+
 def output(req: dict, res: Auth[T], code: int) -> None:
     """
     Compact request/response logging with STATUS first and an auth verdict.
@@ -52,7 +53,7 @@ def output(req: dict, res: Auth[T], code: int) -> None:
 
 ##########
 
-print("ZETA Demo (Condensed Story Mode)")
+print("ZETA Demo")
 input("> Press Enter to begin... ")
 
 Auth.start_service(redis_url=None)
@@ -225,10 +226,9 @@ req = Auth[TransferRequest].load(
 res = requests.post(SERVER_URL + "/transfer", json=req)
 output(req, Auth[Error](**res.json()), res.status_code)
 
-"""
+
 ##########
 
-# Wesley does /verify to see if there is anyone who hasn't redeemed (explain why it exists)
 print(
     "A bit frustrated now, he sees Geordi about to enter the recital.  " \
     "He quickly steals a copy of Geordi's ticket and public key to check if " \
@@ -236,11 +236,38 @@ print(
     "to promote transfer transparency... but Wesley plans to use it for evil!"
 )
 
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key
+    ),
+    wesley.private_key,
+    wesley.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+
+##########
+
 # Jean-Luc attempts to redeem for Geordi
 print(
     "Upon seeing Geordi, Jean-Luc gets so excited that he takes Geordi's " \
     "ticket and tries to make a redemption request for him."
 )
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=geordi_ticket
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # Jean-Luc tries to skip redeem and just stamp Geordi's ticket
 print(
@@ -249,12 +276,42 @@ print(
     "stamping request in an attempt to confirm and mark Geordi as admitted."
 )
 
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key,
+        stamp=True
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
 # Geoerdi tries to redeem, but Wesley messes up ticket ciphertext bits
 print(
     "Geordi finally makes the redemption request himself... however, Wesley " \
     "attempts to jam the signal, and the request reaches the server with a " \
     "few of the encrypted ticket ciphertext bytes mixed up."
 )
+
+bad_ticket = geordi_ticket[:-1] + ("A" if geordi_ticket[-1] != "A" else "B")
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=bad_ticket
+    ),
+    geordi.private_key,
+    geordi.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # Geordi redeems for himself
 print(
@@ -263,14 +320,72 @@ print(
     "so his request reaches the server unaltered."
 )
 
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=geordi_ticket
+    ),
+    geordi.private_key,
+    geordi.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[RedeemResponse](**res.json()), res.status_code)
+
+##########
+
 # Now Geordi attempts to stamp his own ticket (which fails obviously)
 print("Without thinking, Geordi then attempts to stamp his own ticket.")
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key,
+        stamp=True
+    ),
+    geordi.private_key,
+    geordi.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # Jean-Luc verifies with stamp
 print("Finally, Jean-Luc sends a proper verify/stamp request to admit Geordi")
 
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key,
+        stamp=True
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+
+##########
+
 # Jean-Luc stamps again, with a failure message that the ticket is already stamped
 print("...And just to make sure, he stamps it for a second time too!")
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key,
+        stamp=True
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # Wesley does /verify again and see if ticket has been redeemed
 print(
@@ -280,99 +395,20 @@ print(
     "or not Geordi was stamped and admitted."
 )
 
-
-
-
-
-# (Testing-only) Owner verify BEFORE redemption — not needed in real flow
-print("Beverly performs a pre-redeem verify for testing; in practice stamping later is enough to prevent reuse.")
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub),
-               beverly_priv, beverly_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_before = parse_res(res)
-show_req_res("Owner Verify BEFORE Redeem (optional)", req, v_before)
-
-# Non-owner verify (read-only)
-print("A non-owner does a verify-only check to confirm the ticket’s current state without any stamp authority.")
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub),
-               rand_priv, rand_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_non_owner = parse_res(res)
-show_req_res("Verify by NON-OWNER (read-only; no stamp)", req, v_non_owner)
-
-# Owner attempts to redeem on behalf of holder — should fail
-print("Beverly attempts to redeem on Geordi’s behalf; the system should require the holder’s signature.")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=geordi_ticket),
-               beverly_priv, beverly_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); orf = parse_res(res)
-show_req_res("Owner tries to redeem FOR holder — expect FAIL", req, orf)
-
-# Attempt to stamp BEFORE redemption — should fail  [COVERAGE #1]
-print("Beverly attempts to stamp the ticket BEFORE redemption — should fail.")
-req = auth_req(
-    VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
-    beverly_priv, beverly_pub, VerifyRequest
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=geordi_ticket,
+        check_public_key=geordi.public_key
+    ),
+    wesley.private_key,
+    wesley.public_key
 ).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); bad_stamp = parse_res(res)
-show_req_res("Owner STAMP BEFORE Redeem — expect FAIL", req, bad_stamp)
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code)
 
-# Tamper ticket ciphertext — should fail integrity check  [COVERAGE #10]
-print("Tamper with the encrypted ticket blob so integrity check fails.")
-bad_ticket = geordi_ticket[:-1] + ("A" if geordi_ticket[-1] != "A" else "B")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=bad_ticket),
-               geor_priv, geor_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); tampered = parse_res(res)
-show_req_res("Redeem with tampered ticket — expect FAIL", req, tampered)
+##########
 
-# Proper flow: HOLDER redeem → OWNER stamp
-print("Geordi redeems his transferred ticket to complete the holder-side path.")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=geordi_ticket),
-               geor_priv, geor_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); r_ok = parse_res(res)
-show_req_res("Redeem (Geordi)", req, r_ok)
-
-# Owner verifies BEFORE stamp (should not see stamped state)
-print("Beverly verifies without stamping to confirm stamped state is False.")
-req = auth_req(
-    VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=False),
-    beverly_priv, beverly_pub, VerifyRequest
-).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_before_stamp_owner = parse_res(res)
-show_req_res("Owner Verify AFTER Stamp (no-stamp flag) — should not show stamped", req, v_before_stamp_owner)
-
-print("Beverly stamps after redemption; this is the decisive step that prevents repeat use.")
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
-               beverly_priv, beverly_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_stamp = parse_res(res)
-show_req_res("Owner Verify with STAMP (Beverly)", req, v_stamp)
-
-# Non-owner attempts to STAMP — should fail  [COVERAGE #2]
-print("A non-owner attempts to STAMP — should be rejected by permissions.")
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
-               rand_priv, rand_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); non_owner_stamp = parse_res(res)
-show_req_res("Non-owner STAMP — expect FAIL", req, non_owner_stamp)
-
-# Owner verifies AFTER stamp (should see stamped state)
-print("Beverly verifies again without stamping to confirm stamped state is visible to the owner.")
-req = auth_req(
-    VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=False),
-    beverly_priv, beverly_pub, VerifyRequest
-).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_after_stamp_owner = parse_res(res)
-show_req_res("Owner Verify AFTER Stamp (no-stamp flag) — should show stamped", req, v_after_stamp_owner)
-
-# Non-owner verify AFTER stamp (should NOT show stamped state)
-print("A non-owner verifies after stamping to confirm stamp info is hidden from outsiders.")
-req = auth_req(
-    VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=False),
-    rand_priv, rand_pub, VerifyRequest
-).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); v_after_stamp_non_owner = parse_res(res)
-show_req_res("Non-owner Verify AFTER Stamp (no-stamp flag) — should NOT show stamped", req, v_after_stamp_non_owner)
-
-
-#$$$$$
-
-#
 print(
     "Furious at Wesley, but unable to find him, Beverly decides she is going " \
     "to attend the recital after all in an attempt to calm herself down.  " \
@@ -381,8 +417,26 @@ print(
     "doesn't know that Geordi's ticket has already been redeemed and stamped."
 )
 
+req = Auth[TransferRequest].load(
+    TransferRequest(
+        event_id=event_id,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=geordi_ticket,
+                transfer_public_key=beverly.public_key
+            ),
+            geordi.private_key,
+            geordi.public_key
+        )
+    ),
+    beverly.private_key,
+    beverly.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/transfer", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
 
-#
+##########
+
 print(
     "Beverly is now livid at the situation, forcing Geordi to leave the " \
     "event to go and comfort her.  And upon his return, Geordi attempts to " \
@@ -390,103 +444,140 @@ print(
     "starts."
 )
 
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=geordi_ticket
+    ),
+    geordi.private_key,
+    geordi.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
 
-print(
-    "Jean-Luc knows that Geordi was at the event, so even though he can't " \
-    "re-redeem, he decides to just try and stamp Geordi's ticket for a "
-    "second time so he is defintiely marked as admitted."
-)
-
+##########
 
 print(
     "Meanwhile, Wesley has finally realized that instead of trying to steal " \
     "other people's tickets and credentials, he can simply register himself."
 )
 
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id
+    ), 
+    wesley.private_key,
+    wesley.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/register", json=req)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+
+wesley_ticket = res.json()["data"]["content"]["ticket"]
+
+##########
+
 # Beverly tries to cancel his ticket
+print(
+    "Beverly finds out about her son's plan, takes a copy of his ticket " \
+    "data/public key, and attempts to cancel his ticket."
+)
+
+req = Auth[CancelRequest].load(
+    CancelRequest(
+        event_id=event_id,
+        ticket=wesley_ticket,
+        check_public_key=wesley.public_key
+    ),
+    beverly.private_key,
+    beverly.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/cancel", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # She tells Jean-Luc and he cancels it when he shows up at the event
+print(
+    "Unable to do it herself, she calls up Jean-Luc (the event owner) to " \
+    "cancel the ticket."
+)
+
+req = Auth[CancelRequest].load(
+    CancelRequest(
+        event_id=event_id,
+        ticket=wesley_ticket,
+        check_public_key=wesley.public_key
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/cancel", json=req)
+output(req, Auth[CancelResponse](**res.json()), res.status_code)
+
+##########
 
 # Wesley attempts to redeem and transfer
+print("Wesley then tries to redeem his new ticket, not knowing it was canceled.")
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=wesley_ticket
+    ),
+    wesley.private_key,
+    wesley.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    "He wonders if initiating a transfer to himself to get a new encrypted " \
+    "ticket ciphertext with a new ticket version would do any good."
+)
+
+req = Auth[TransferRequest].load(
+    TransferRequest(
+        event_id=event_id,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=wesley_ticket,
+                transfer_public_key=wesley.public_key
+            ),
+            wesley.private_key,
+            wesley.public_key
+        )
+    ),
+    wesley.private_key,
+    wesley.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/transfer", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
 
 # Wesley dresses up in a disguise and asks Jean-Luc to stamp his ticket -- which fails
+print(
+    "With one final trick up his sleeve... Wesley crafts up his best " \
+    "disguise and shows up at the door to the event.  Wesley presents his " \
+    "ticket to Jean-Luc, who attempts to stamp it."
+)
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id,
+        ticket=wesley_ticket,
+        check_public_key=wesley.public_key
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
 
 
-
-# Transfer AFTER stamp — should fail  [COVERAGE #5]
-print("Attempt to transfer a stamped ticket — should be blocked.")
-tblk_after = auth_req(Transfer(ticket=geordi_ticket, transfer_public_key=rand_pub),
-                      geor_priv, geor_pub, Transfer)
-treq_after = auth_req(TransferRequest(event_id=event_id, transfer=tblk_after),
-                      rand_priv, rand_pub, TransferRequest).model_dump()
-res = requests.post(SERVER_URL + "/transfer", json=treq_after); tr_after = parse_res(res)
-show_req_res("Transfer AFTER stamp — expect FAIL", treq_after, tr_after)
-
-# Idempotence checks: double redeem (fail), double stamp (no-op/confirm)
-print("Geordi tries to redeem again to verify a duplicate attempt fails gracefully.")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=geordi_ticket),
-               geor_priv, geor_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); rd2 = parse_res(res)
-show_req_res("Redeem again — expect FAIL", req, rd2)
-
-print("Beverly stamps again to confirm idempotence (no-op/confirm semantics).")
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
-               beverly_priv, beverly_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); st2 = parse_res(res)
-show_req_res("Stamp again — expect no-op/confirm stamped", req, st2)
-
-
-### Wesley makes this ticket
-# Cancellation: fresh ticket → non-owner cancel fail → owner cancel success → post-cancel denials
-print("Jean-Luc takes a fresh ticket to test cancellation flows.")
-req = auth_req(RegisterRequest(event_id=event_id), jean_priv, jean_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); j2 = parse_res(res)
-show_req_res("Register fresh ticket (Jean-Luc)", req, j2)
-jl2_ticket = j2["data"]["content"]["ticket"]
-
-print("A non-owner attempts to cancel to ensure the system rejects unauthorized cancellations.")
-req = auth_req(CancelRequest(event_id=event_id, ticket=jl2_ticket, check_public_key=jean_pub),
-               geor_priv, geor_pub, CancelRequest).model_dump()
-res = requests.post(SERVER_URL + "/cancel", json=req); cfail = parse_res(res)
-show_req_res("Cancel by NON-OWNER — expect FAIL", req, cfail)
-
-print("Beverly cancels the unused ticket to verify owner authority and blocked state thereafter.")
-req = auth_req(CancelRequest(event_id=event_id, ticket=jl2_ticket, check_public_key=jean_pub),
-               beverly_priv, beverly_pub, CancelRequest).model_dump()
-res = requests.post(SERVER_URL + "/cancel", json=req); csucc = parse_res(res)
-show_req_res("Cancel by OWNER (pre-redeem) — expect SUCCESS", req, csucc)
-
-print("Post-cancel checks: redeem/transfer/stamp should all be rejected.")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=jl2_ticket),
-               jean_priv, jean_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); pcr = parse_res(res)
-show_req_res("Redeem canceled ticket — FAIL", req, pcr)
-
-t_after_cancel = auth_req(Transfer(ticket=jl2_ticket, transfer_public_key=geor_pub),
-                          jean_priv, jean_pub, Transfer)
-treq_cancel = auth_req(TransferRequest(event_id=event_id, transfer=t_after_cancel),
-                       geor_priv, geor_pub, TransferRequest).model_dump()
-res = requests.post(SERVER_URL + "/transfer", json=treq_cancel); pct = parse_res(res)
-show_req_res("Transfer canceled ticket — FAIL", treq_cancel, pct)
-
-req = auth_req(VerifyRequest(event_id=event_id, ticket=jl2_ticket, check_public_key=jean_pub, stamp=True),
-               beverly_priv, beverly_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); pcs = parse_res(res)
-show_req_res("Stamp canceled ticket — FAIL", req, pcs)
-
-# This next pair remains as-is to exercise your current behavior; consider failing instead in prod.
-req = auth_req(CancelRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub),
-               beverly_priv, beverly_pub, CancelRequest).model_dump()
-res = requests.post(SERVER_URL + "/cancel", json=req); csucc = parse_res(res)
-show_req_res("Cancel Geordi's ticket — expect SUCCESS", req, csucc)
-
-req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_public_key=geor_pub),
-               beverly_priv, beverly_pub, VerifyRequest).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req); pcs = parse_res(res)
-show_req_res("Stamp canceled ticket — FAIL", req, pcs)
-
-input("\n> Continue… ")
-
+"""
 # =========================== ACT II ===========================
 display.clear()
 print("ACT II — Restricted session with verification blocks, replay/tamper/expiry, and sold-out behavior.")

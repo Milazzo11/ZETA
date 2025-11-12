@@ -20,7 +20,9 @@ def issue(event_id: str) -> Optional[int]:
     :return: the issued ticket number or None if a ticket cannot be issued
     """
 
-    with db.pool.connection() as conn:
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -50,7 +52,9 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     :return: reissue success status
     """
 
-    with db.pool.connection() as conn:
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -76,7 +80,9 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
     :return: state update success status
     """
 
-    with db.pool.connection() as conn:
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -100,7 +106,9 @@ def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
     :return: ticket state data byte or None if not found
     """
 
-    with db.pool.connection() as conn:
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """

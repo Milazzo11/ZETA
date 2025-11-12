@@ -27,6 +27,10 @@ TTL_SECURITY_PAD = 1
 # (useful if, for example, there are slight clock skews)
 
 
+SERVICE_STARTED = False
+# authentication nonce-tracker service status flag
+
+
 REDIS = None
 # Redis connection
 
@@ -86,6 +90,10 @@ class Auth(BaseModel, Generic[T]):
 
         :param redis_url: Reddis connection URL string or None to use in-memory service
         """
+
+        global SERVICE_STARTED
+        SERVICE_STARTED = True
+        # set service flag
 
         if redis_url is None:
             from threading import Lock
@@ -202,6 +210,9 @@ class Auth(BaseModel, Generic[T]):
 
         :return: validated data packet contents
         """
+
+        if not SERVICE_STARTED:
+            raise Exception("Authentication nonce-tracker service not started")
 
         if abs(time.time() - self.data.timestamp) > TIMESTAMP_ERROR:
             raise DomainException(ErrorKind.VALIDATION, "timestamp out of sync")

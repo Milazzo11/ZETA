@@ -44,4 +44,20 @@ def stop_pool() -> None:
 
     global pool
 
+    if pool is None:
+        raise Exception("Database connection pool not started")
+
     pool.close()
+
+
+def get_pool() -> ConnectionPool:
+    """
+    Get the initialized database connection pool.
+
+    :return: database connection pool
+    """
+
+    if pool is None:
+        raise Exception("Database connection pool not started")
+
+    return pool

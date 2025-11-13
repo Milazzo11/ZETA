@@ -1,5 +1,5 @@
 """
-Demo/testing module.
+Testing/demonstration module.
 
 :author: Max Milazzo
 """

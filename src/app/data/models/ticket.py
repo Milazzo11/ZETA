@@ -154,9 +154,6 @@ class Ticket(BaseModel):
         try:
             event_key = Event.get_key(event_id)
 
-            if event_key is None:
-                raise DomainException(ErrorKind.NOT_FOUND, "event not found")
-
             b64_iv, ticket = ticket.split("-")
             cipher = SKC(key=event_key, iv=base64.b64decode(b64_iv))
         
@@ -170,8 +167,11 @@ class Ticket(BaseModel):
                 # check that the decrypted ticket's stored hash value is correct
                 # (error message purposefully kept vague for security)
         
+        except DomainException:
+            raise
+
         except Exception:
-            raise DomainException(ErrorKind.PERMISSION, "ticket verification failed")
+            raise DomainException(ErrorKind.PERMISSION, "ticket verification failed") 
             # handle general decryption failure
             # (error message purposefully kept vague for security)
 

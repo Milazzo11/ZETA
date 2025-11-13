@@ -1,4 +1,4 @@
-ZETA (Zero-storage Encrypted Ticket Authentication) is a secure authentication API for minimal-state ticket issuance, transfer, cancellation, redemption, and validation in event management and access control systems.  It leverages Kerberos-inspired symmetric-key ticket encryption with embedded custom metadata support, yielding zero server-side user data storage (and only a single byte per ticket used for state management).
+ZETA (Zero-storage Encrypted Ticket Authentication) is a secure authentication API for minimal-state ticket issuance, transfer, cancelation, redemption, and validation in event management and access control systems.  It leverages Kerberos-inspired symmetric-key ticket encryption with embedded custom metadata support, yielding zero server-side user data storage (and only a single byte per ticket used for state management).
 
 Each ticket is encrypted to the holder and validated by the server on demand.  The system prevents double-use, spoofing, unauthorized transfers, and replay attacks, while keeping the protocol lightweight and easy to reason about.  Mutual authentication is achieved without requiring long-term session cookies or tokens.
 

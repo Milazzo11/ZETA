@@ -31,6 +31,7 @@ def output(
     request: Auth[Any],
     response: Auth[Any],
     status_code: int,
+    expected_code: int,
     auth: bool = True
 ) -> None:
     """
@@ -39,12 +40,13 @@ def output(
     :param request: the original request
     :param response: the server response
     :param status_code: HTTP response status code
+    :param expected_code: expected HTTP response status code
     :param auth: perform request authentication if True
     """
 
     if auth:
         response.authenticate()
-    
+
     print("====================")
     print("STATUS:", status_code)
     print("\nREQUEST:", request.model_dump())
@@ -53,6 +55,8 @@ def output(
 
     input("> ")
     display.clear()
+
+    assert status_code == expected_code, f"{status_code} != {expected_code}"
 
 
 ##########
@@ -92,7 +96,7 @@ req = Auth[CreateRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[CreateResponse](**res.json()), res.status_code)
+output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
 
 event_id_1 = res.json()["data"]["content"]["event_id"]
 assert len(event_id_1) == 36, f"{len(event_id_1)} != 36"
@@ -110,7 +114,7 @@ req = Auth[SearchRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/search", json=req.model_dump())
-output(req, Auth[SearchResponse](**res.json()), res.status_code)
+output(req, Auth[SearchResponse](**res.json()), res.status_code, 200)
 
 assert len(res.json()["data"]["content"]["events"]) > 0, (
     f"{len(res.json()["data"]["content"]["events"])} !> 0"
@@ -128,7 +132,7 @@ req = Auth[RegisterRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 beverly_ticket = res.json()["data"]["content"]["ticket"]
 assert beverly_ticket is not None, "None is None"
@@ -158,7 +162,7 @@ req = Auth[TransferRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "signature verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'signature verification failed'"
@@ -191,7 +195,7 @@ req = Auth[TransferRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[TransferResponse](**res.json()), res.status_code)
+output(req, Auth[TransferResponse](**res.json()), res.status_code, 200)
 
 geordi_ticket = res.json()["data"]["content"]["ticket"]
 assert geordi_ticket is not None, "None is None"
@@ -215,7 +219,7 @@ req = Auth[RedeemRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket superseded", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket superseded'"
@@ -245,7 +249,7 @@ req = Auth[TransferRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket superseded", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket superseded'"
@@ -270,7 +274,7 @@ req = Auth[VerifyRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == False, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != False"
@@ -298,7 +302,7 @@ req = Auth[RedeemRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 400)
 
 assert res.json()["data"]["content"]["detail"] == "ticket for different user", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket for different user'"
@@ -323,7 +327,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket has not been redeemed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket has not been redeemed'"
@@ -348,7 +352,7 @@ req = Auth[RedeemRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "ticket verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket verification failed'"
@@ -371,7 +375,7 @@ req = Auth[RedeemRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[RedeemResponse](**res.json()), res.status_code)
+output(req, Auth[RedeemResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["success"] == True, (
     f"{repr(res.json()["data"]["content"]["success"])} != True"
@@ -392,7 +396,7 @@ req = Auth[VerifyRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "only event owners may stamp tickets", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'only event owners may stamp tickets'"
@@ -413,7 +417,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -440,7 +444,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket is already stamped", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket is already stamped'"
@@ -465,7 +469,7 @@ req = Auth[VerifyRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -503,7 +507,7 @@ req = Auth[TransferRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket transfer failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket transfer failed'"
@@ -527,7 +531,7 @@ req = Auth[RedeemRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket redemption failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket redemption failed'"
@@ -548,7 +552,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 wesley_ticket = res.json()["data"]["content"]["ticket"]
 assert wesley_ticket is not None, "None is None"
@@ -570,7 +574,7 @@ req = Auth[CancelRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "not event owner", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'not event owner'"
@@ -593,7 +597,7 @@ req = Auth[CancelRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
-output(req, Auth[CancelResponse](**res.json()), res.status_code)
+output(req, Auth[CancelResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["success"] == True, (
     f"{repr(res.json()["data"]["content"]["success"])} != True"
@@ -612,7 +616,7 @@ req = Auth[RedeemRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket canceled", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket canceled'"
@@ -641,7 +645,7 @@ req = Auth[TransferRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket canceled", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket canceled'"
@@ -665,7 +669,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket canceled", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket canceled'"
@@ -698,7 +702,7 @@ res_2_auth = Auth[ErrorResponse](**res_2.json())
 res_2_auth.authenticate()
 # run replay request to detect time-sensitive nonce repeat for the next test
 
-output(req, Auth[CreateResponse](**res.json()), res.status_code)
+output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
 
 event_id_2 = res.json()["data"]["content"]["event_id"]
 assert len(event_id_2) == 36, f"{len(event_id_2)} != 36"
@@ -710,7 +714,7 @@ print(
     "so he interecepts and replays William's creation request."
 )
 
-output(req, res_2_auth, res_2.status_code, auth=False)
+output(req, res_2_auth, res_2.status_code, 409, auth=False)
 
 assert res_2.json()["data"]["content"]["detail"] == "duplicate request nonce", (
     f"{repr(res_2.json()["data"]["content"]["detail"])} != 'duplicate request nonce'"
@@ -722,7 +726,7 @@ print("He waits until the server forgets about the request nonce and tries again
 
 req.data.timestamp -= TIMESTAMP_ERROR
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 400)
 # timestamp error triggers before any other checks
 
 assert res.json()["data"]["content"]["detail"] == "timestamp out of sync", (
@@ -739,7 +743,7 @@ print(
 req.data.nonce = str(uuid.uuid4())
 req.data.timestamp = time.time()
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "signature verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'signature verification failed'"
@@ -760,7 +764,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 wesley_ticket = res.json()["data"]["content"]["ticket"]
 assert wesley_ticket is not None, "None is None"
@@ -778,7 +782,7 @@ req = Auth[RedeemRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "ticket verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket verification failed'"
@@ -800,7 +804,7 @@ req = Auth[RegisterRequest].load(
     deanna.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "verification required", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'verification required'"
@@ -833,7 +837,7 @@ req = Auth[RegisterRequest].load(
     deanna.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 deanna_ticket = res.json()["data"]["content"]["ticket"]
 assert deanna_ticket is not None, "None is None"
@@ -854,7 +858,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "verification for different user", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'verification for different user'"
@@ -881,7 +885,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "unauthorized signer", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'unauthorized signer'"
@@ -890,7 +894,7 @@ assert res.json()["data"]["content"]["detail"] == "unauthorized signer", (
 ##########
 
 print(
-    '"What about if I spoof the siagnature?" he thinks -- and so he creates ' \
+    '"What about if I spoof the signature?" he thinks -- and so he creates ' \
     "a request with a new verification block: signed by him but with " \
     "William's public key attached."
 )
@@ -912,7 +916,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "signature verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'signature verification failed'"
@@ -941,7 +945,7 @@ req = Auth[RegisterRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 beverly_ticket = res.json()["data"]["content"]["ticket"]
 assert beverly_ticket is not None, "None is None"
@@ -971,7 +975,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "unable to issue ticket", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'unable to issue ticket'"
@@ -990,7 +994,7 @@ req = Auth[RedeemRequest].load(
     deanna.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[RedeemResponse](**res.json()), res.status_code)
+output(req, Auth[RedeemResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["success"] == True, (
     f"{repr(res.json()["data"]["content"]["success"])} != True"
@@ -1014,7 +1018,7 @@ req = Auth[VerifyRequest].load(
     william.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -1042,7 +1046,7 @@ req = Auth[DeleteRequest].load(
     william.public_key
 )
 res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
-output(req, Auth[DeleteResponse](**res.json()), res.status_code)
+output(req, Auth[DeleteResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["success"] == True, (
     f"{repr(res.json()["data"]["content"]["success"])} != True"
@@ -1064,7 +1068,7 @@ req = Auth[RedeemRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 404)
 
 assert res.json()["data"]["content"]["detail"] == "event not found", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'event not found'"
@@ -1086,7 +1090,7 @@ req = Auth[DeleteRequest].load(
     william.public_key
 )
 res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "not event owner", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'not event owner'"
@@ -1104,7 +1108,7 @@ req = Auth[DeleteRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
-output(req, Auth[DeleteResponse](**res.json()), res.status_code)
+output(req, Auth[DeleteResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["success"] == True, (
     f"{repr(res.json()["data"]["content"]["success"])} != True"
@@ -1126,7 +1130,7 @@ req = Auth[SearchRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/search", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 404)
 
 assert res.json()["data"]["content"]["detail"] == "event not found", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'event not found'"
@@ -1145,7 +1149,7 @@ req = Auth[SearchRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/search", json=req.model_dump())
-output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 404)
 
 assert res.json()["data"]["content"]["detail"] == "event not found", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'event not found'"

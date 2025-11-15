@@ -3,7 +3,7 @@ Testing/demonstration module.
 
 :author: Max Milazzo
 """
-# TODO - transfer limit tests
+
 
 
 from app.API.models.base import Auth, ErrorResponse
@@ -89,7 +89,8 @@ req = Auth[CreateRequest].load(
             name="Flute Recital",
             description="Ressikan flute performance",
             tickets=3,
-            restricted=False
+            restricted=False,
+            transfer_limit=63
         )
     ),
     jean_luc.private_key,
@@ -285,6 +286,9 @@ assert res.json()["data"]["content"]["stamped"] is None, (
 assert res.json()["data"]["content"]["version"] == 2, (
     f"{repr(res.json()["data"]["content"]["version"]) != 2}"
 )
+assert res.json()["data"]["content"]["transfer_limit"] == 63, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 63}"
+)
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
 )
@@ -431,6 +435,9 @@ assert res.json()["data"]["content"]["stamped"] == True, (
 assert res.json()["data"]["content"]["version"] == 2, (
     f"{repr(res.json()["data"]["content"]["version"]) != 2}"
 )
+assert res.json()["data"]["content"]["transfer_limit"] == 63, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 63}"
+)
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
 )
@@ -485,6 +492,9 @@ assert res.json()["data"]["content"]["stamped"] is None, (
 )
 assert res.json()["data"]["content"]["version"] == 2, (
     f"{repr(res.json()["data"]["content"]["version"]) != 2}"
+)
+assert res.json()["data"]["content"]["transfer_limit"] == 63, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 63}"
 )
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
@@ -698,7 +708,8 @@ req = Auth[CreateRequest].load(
             name="Jazz Trombone",
             description="Any jazz except Dixieland",
             tickets=2,
-            restricted=True
+            restricted=True,
+            transfer_limit=1
         )
     ),
     william.private_key,
@@ -831,6 +842,7 @@ deanna_verification = Auth[Verification].load(
     Verification(
         event_id=event_id_2,
         public_key=deanna.public_key,
+        transfer_limit=0,
         metadata="Imzadi <3"
     ),
     william.private_key,
@@ -934,6 +946,36 @@ assert res.json()["data"]["content"]["detail"] == "signature verification failed
 ##########
 
 print(
+    "Deanna feels bad for Wesley and decides to transfer him her ticket, " \
+    "but William is well-aware of her hyperempathetic nature and had " \
+    "already set a customer ticket transfer limit of 0 for her."
+)
+
+req = Auth[TransferRequest].load(
+    TransferRequest(
+        event_id=event_id_2,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=deanna_ticket,
+                transfer_public_key=wesley.public_key
+            ),
+            deanna.private_key,
+            deanna.public_key
+        )
+    ),
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
+
+assert res.json()["data"]["content"]["detail"] == "ticket transfer limit reached", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket transfer limit reached'"
+)
+
+##########
+
+print(
     "Meanwhile, William has given Beverly a legitamite verification block, " \
     "and she registers for the event -- claiming the last available ticket."
 )
@@ -958,6 +1000,66 @@ output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
 beverly_ticket = res.json()["data"]["content"]["ticket"]
 assert beverly_ticket is not None, "None is None"
+
+#######
+
+print(
+    "Beverly realizes that her son is on the loose causing mayhem again, " \
+    "however, and so she decides to transfer her ticker for this event to " \
+    "Geordi as well."
+)
+
+req = Auth[TransferRequest].load(
+    TransferRequest(
+        event_id=event_id_2,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=beverly_ticket,
+                transfer_public_key=geordi.public_key
+            ),
+            beverly.private_key,
+            beverly.public_key
+        )
+    ),
+    geordi.private_key,
+    geordi.public_key
+)
+res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
+output(req, Auth[TransferResponse](**res.json()), res.status_code, 200)
+
+geordi_ticket = res.json()["data"]["content"]["ticket"]
+assert geordi_ticket is not None, "None is None"
+
+##########
+
+print(
+    "Geordi feels bad for Beverly now, though, and decides that he will give " \
+    "her back the ticket and deal with Wesley himself... unfortunately, " \
+    "neither of them realize that the ticket transfer limit for the event " \
+    "has already been reached."
+)
+
+req = Auth[TransferRequest].load(
+    TransferRequest(
+        event_id=event_id_2,
+        transfer=Auth[Transfer].load(
+            Transfer(
+                ticket=geordi_ticket,
+                transfer_public_key=beverly.public_key
+            ),
+            geordi.private_key,
+            geordi.public_key
+        )
+    ),
+    beverly.private_key,
+    beverly.public_key
+)
+res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
+
+assert res.json()["data"]["content"]["detail"] == "ticket transfer limit reached", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket transfer limit reached'"
+)
 
 ##########
 
@@ -1038,6 +1140,9 @@ assert res.json()["data"]["content"]["stamped"] == True, (
 assert res.json()["data"]["content"]["version"] == 1, (
     f"{repr(res.json()["data"]["content"]["version"]) != 1}"
 )
+assert res.json()["data"]["content"]["transfer_limit"] == 0, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 0}"
+)
 assert res.json()["data"]["content"]["metadata"] == "Imzadi <3", (
     f"{repr(res.json()["data"]["content"]["metadata"])} != 'Imzadi <3'"
 )
@@ -1067,17 +1172,17 @@ assert res.json()["data"]["content"]["success"] == True, (
 ##########
 
 print(
-    "Beverly didn't hear about any emergency, though, and so she attempts " \
-    "to redeem her ticket as normal."
+    "Geordi didn't hear about any emergency, though, and so he attempts to " \
+    "redeem his ticket as normal."
 )
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
         event_id=event_id_2,
-        ticket=beverly_ticket
+        ticket=geordi_ticket
     ),
-    beverly.private_key,
-    beverly.public_key
+    geordi.private_key,
+    geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 404)

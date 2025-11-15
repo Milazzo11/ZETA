@@ -17,7 +17,7 @@ from typing import Self
 
 
 
-TRANSFER_LIMIT = 1 << 6 - 1
+TRANSFER_LIMIT = (1 << 6) - 1
 # transfer limit value: 0b00111111
 # (transfer version data stored in low 6 bits)
 

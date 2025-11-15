@@ -6,7 +6,7 @@
 
 
 
-from app.data.models.event import Event
+from app.data.models.event import Event, TRANSFER_LIMIT
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -40,7 +40,17 @@ class VerifyResponse(BaseModel):
         ...,
         description="If true, ticket is stamped (for event owner only)"
     )
-    version: int = Field(..., ge=1, le=64, description="Ticket transfer version")
+    version: int = Field(
+        ...,
+        ge=1,
+        le=TRANSFER_LIMIT + 1,
+        description="Ticket transfer version"
+    )
+    transfer_limit: int = Field(
+        ge=0,
+        le=TRANSFER_LIMIT,
+        description="ticket transfer limit"
+    )
     metadata: Optional[str] = Field(..., description="Ticket metadata")
 
 
@@ -75,6 +85,7 @@ class VerifyResponse(BaseModel):
                 redeemed=redeemed,
                 stamped=stamped,
                 version=ticket.version + 1, # 1-indexed version
+                transfer_limit=ticket.transfer_limit,
                 metadata=ticket.metadata
             )
 
@@ -84,5 +95,6 @@ class VerifyResponse(BaseModel):
             redeemed=redeemed,
             stamped=None,
             version=ticket.version + 1, # 1-indexed version
+            transfer_limit=ticket.transfer_limit,
             metadata=ticket.metadata
         )

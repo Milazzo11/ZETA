@@ -49,7 +49,7 @@ class Event(BaseModel):
         TRANSFER_LIMIT,
         ge=0,
         le=TRANSFER_LIMIT,
-        description="Maximum number of allowed ticket transfers"
+        description="Default maximum number of allowed ticket transfers"
     )
 
 

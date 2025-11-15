@@ -180,7 +180,7 @@ class Ticket(BaseModel):
             # handle general decryption failure
             # (error message purposefully kept vague for security)
 
-        if ticket_data["public_key"] != public_key:
+        if ticket_data["public_key_hash"] != hash.generate(public_key):
             raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
@@ -288,7 +288,7 @@ class Ticket(BaseModel):
 
         ticket_data = {
             "event_id": self.event_id,
-            "public_key": self.public_key,
+            "public_key_hash": hash.generate(self.public_key),
             "number": self.number,
             "version": self.version,
             "transfer_limit": self.transfer_limit,

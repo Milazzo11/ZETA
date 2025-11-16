@@ -1042,7 +1042,8 @@ assert res.json()["data"]["content"]["metadata"] == {
 }, (
     repr(res.json()["data"]["content"]["metadata"]) + " != {" \
     '"mission": "to boldy go where no man has gone before", ' \
-    '"duration": 5}'
+    '"duration": 5' \
+    '}'
 )
 
 ##########

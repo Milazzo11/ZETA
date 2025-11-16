@@ -1016,7 +1016,7 @@ req = Auth[VerifyRequest].load(
     VerifyRequest(
         event_id=event_id_2,
         ticket=beverly_ticket,
-        check_public_key=beverly.public_key,
+        check_public_key=beverly.public_key
     ),
     beverly.private_key,
     beverly.public_key
@@ -1281,7 +1281,7 @@ print(
 
 req = Auth[DeleteRequest].load(
     DeleteRequest(
-        event_id=event_id_1,
+        event_id=event_id_1
     ),
     william.private_key,
     william.public_key
@@ -1299,7 +1299,7 @@ print("William calls up Jean-Luc, and he then makes the deletion request for his
 
 req = Auth[DeleteRequest].load(
     DeleteRequest(
-        event_id=event_id_1,
+        event_id=event_id_1
     ),
     jean_luc.private_key,
     jean_luc.public_key

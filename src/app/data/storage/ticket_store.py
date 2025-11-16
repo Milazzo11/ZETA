@@ -60,7 +60,7 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
                 WHERE event_id = %s
                     AND get_byte(state_bytes, %s) = %s
                 """,
-                (ticket_number, version + 1, event_id, ticket_number, version),
+                (ticket_number, version + 1, event_id, ticket_number, version)
             )
 
             return cur.rowcount == 1
@@ -88,7 +88,7 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
                 WHERE event_id = %s
                     AND get_byte(state_bytes, %s) < %s
                 """,
-                (ticket_number, data, event_id, ticket_number, threshold),
+                (ticket_number, data, event_id, ticket_number, threshold)
             )
 
             return cur.rowcount == 1
@@ -113,7 +113,7 @@ def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
                 FROM event_data
                 WHERE event_id = %s;
                 """,
-                (ticket_number, event_id),
+                (ticket_number, event_id)
             )
             row = cur.fetchone()
 

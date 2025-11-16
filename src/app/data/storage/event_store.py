@@ -88,7 +88,7 @@ def search(text: str, limit: int) -> list[dict]:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT * FROM events WHERE name ILIKE %s LIMIT %s;",
-                (pattern, limit),
+                (pattern, limit)
             )
             rows = cur.fetchall()
 
@@ -158,7 +158,7 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     "event_key": event_key,
                     "owner_public_key": owner_public_key,
                     "state_bytes": state_bytes
-                },
+                }
             )
             # create non-public event data row
 

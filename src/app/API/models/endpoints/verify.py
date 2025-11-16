@@ -74,14 +74,14 @@ class VerifyResponse(BaseModel):
             if request.stamp and not is_event_owner:
                 raise DomainException(
                     ErrorKind.PERMISSION,
-                    "only event owners may stamp tickets",
+                    "only event owners may stamp tickets"
                 )
                 # ensure that any ticket stamp attempts come from the event owner
 
         ticket = Ticket.load(
             request.event_id,
             request.check_public_key,
-            request.ticket,
+            request.ticket
         )
 
         if request.stamp:
@@ -97,5 +97,5 @@ class VerifyResponse(BaseModel):
             stamped=stamped,
             version=ticket.version + 1,  # 1-indexed version
             transfer_limit=ticket.transfer_limit,
-            metadata=ticket.metadata,
+            metadata=ticket.metadata
         )

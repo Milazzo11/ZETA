@@ -903,7 +903,7 @@ assert res.json()["data"]["content"]["detail"] == "unauthorized signer", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'unauthorized signer'"
 )
 
-########## TODO - finish update and add wesley forged gen sig
+##########
 
 print(
     '"What about if I spoof the signature?" he thinks -- and so he creates ' \

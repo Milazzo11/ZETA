@@ -13,34 +13,35 @@ import os
 
 
 PRIV_KEY_FILE = os.path.join("data", "priv.key")
-# private key file
-
-
 PUB_KEY_FILE = os.path.join("data", "pub.key")
-# public key file
-
-
-with open(PRIV_KEY_FILE, "rb") as f:
-    PRIVATE_KEY = f.read()
-
-PRIVATE_KEY = PRIVATE_KEY.decode("utf-8")
-# load server private key from file
-
-
-RESPONSE_SIGNER = AKC(private_key=PRIVATE_KEY)
-# server response signer cipher
+# key file locations
 
 
 
-def setup() -> None:
+def setup() -> str:
     """
-    Set up server keys.
+    Generate a new server keypair, write it to disk, and return the private key.
     """
 
     cipher = AKC()
+    # generate new keypair
 
-    with open(PRIV_KEY_FILE, "wb") as f:
+    with open(PRIV_KEY_FILE, "w", encoding="utf-8") as f:
         f.write(cipher.private_key)
-        
-    with open(PUB_KEY_FILE, "wb") as f:
+
+    with open(PUB_KEY_FILE, "w", encoding="utf-8") as f:
         f.write(cipher.public_key)
+
+    return cipher.private_key
+
+
+if os.path.exists(PRIV_KEY_FILE):
+    with open(PRIV_KEY_FILE, "r", encoding="utf-8") as f:
+        PRIVATE_KEY = f.read()
+
+else:
+    PRIVATE_KEY = setup()
+
+
+RESPONSE_SIGNER = AKC(private_key=PRIVATE_KEY)
+# single signer instance for server responses

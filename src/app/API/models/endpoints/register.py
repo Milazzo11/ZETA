@@ -12,7 +12,7 @@ from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
-from typing import Optional, Self, Union
+from typing import Any, Self
 
 
 
@@ -23,16 +23,13 @@ class Verification(BaseModel):
 
     event_id: str = Field(..., description="ID of the event to register for")
     public_key: str = Field(..., description="Public key of the registering user")
-    transfer_limit: Optional[int] = Field(
+    transfer_limit: int | None = Field(
         None,
         ge=0,
         le=TRANSFER_LIMIT,
         description="Custom ticket transfer limit"
     )
-    metadata: Optional[Union[dict, str]] = Field(
-        None,
-        description="Custom ticket metadata"
-    )
+    metadata: Any = Field(None, description="Custom ticket metadata")
 
 
 
@@ -42,7 +39,7 @@ class RegisterRequest(BaseModel):
     """
 
     event_id: str = Field(..., description="ID of the event to register for")
-    verification: Optional[Auth[Verification]] = Field(
+    verification: Auth[Verification] | None = Field(
         None,
         description="Verification for restricted events"
     )

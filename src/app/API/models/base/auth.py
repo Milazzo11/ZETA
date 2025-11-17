@@ -14,7 +14,7 @@ import math
 import time
 import uuid
 from pydantic import BaseModel, Field
-from typing import Generic, Optional, Self, TypeVar
+from typing import Generic, Self, TypeVar
 
 
 
@@ -84,7 +84,7 @@ class Auth(BaseModel, Generic[T]):
 
 
     @staticmethod
-    def start_service(redis_url: Optional[str]) -> None:
+    def start_service(redis_url: str | None) -> None:
         """
         Start the authentication nonce-tracker service.
 
@@ -122,21 +122,21 @@ class Auth(BaseModel, Generic[T]):
     def load(
         cls,
         content: T,
-        private_key: str = keys.PRIVATE_KEY,
-        public_key: str = keys.PUBLIC_KEY
+        cipher: AKC = keys.RESPONSE_SIGNER,
     ) -> Self:
         """
         Sign a data payload and load into an authenticated packet.
 
         :param content: content to be loaded and authenticated
+        :param cipher: asymmetric signing cipher
         :return: new valid authenticated packet with injected data payload
         """
 
         data = Data.load(content)
-        cipher = AKC(private_key=private_key)
 
         return cls(
-            data=data, public_key=public_key,
+            data=data,
+            public_key=cipher.public_key,
             signature=cipher.sign(data.model_dump())
         )
 

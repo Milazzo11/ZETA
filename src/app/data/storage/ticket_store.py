@@ -8,11 +8,9 @@ Ticket model database integrations.
 
 from . import connection as db
 
-from typing import Optional
 
 
-
-def issue(event_id: str) -> Optional[int]:
+def issue(event_id: str) -> int | None:
     """
     Update the database to issue a new event ticket with a unique ticket number.
 
@@ -94,7 +92,7 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
             return cur.rowcount == 1
 
 
-def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
+def load_state_byte(event_id: str, ticket_number: int) -> int | None:
     """
     Load a ticket's state data byte from the database.
 

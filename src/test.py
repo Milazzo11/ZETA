@@ -93,8 +93,7 @@ req = Auth[CreateRequest].load(
             transfer_limit=63
         )
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
 output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
@@ -111,8 +110,7 @@ req = Auth[SearchRequest].load(
         text="flute",
         mode="text"
     ),
-    beverly.private_key,
-    beverly.public_key
+    beverly
 )
 res = requests.post(SERVER_URL + "/search", json=req.model_dump())
 output(req, Auth[SearchResponse](**res.json()), res.status_code, 200)
@@ -128,9 +126,8 @@ print("And now that she has the event ID, she registers for the recital.")
 req = Auth[RegisterRequest].load(
     RegisterRequest(
         event_id=event_id_1
-    ), 
-    beverly.private_key,
-    beverly.public_key
+    ),
+    beverly
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
@@ -147,6 +144,9 @@ print(
     "transfer his mom's ticket to him."
 )
 
+wesley_forged = AKC(private_key=wesley.private_key)
+wesley_forged.public_key = beverly.public_key
+
 req = Auth[TransferRequest].load(
     TransferRequest(
         event_id=event_id_1,
@@ -155,12 +155,10 @@ req = Auth[TransferRequest].load(
                 ticket=beverly_ticket,
                 transfer_public_key=wesley.public_key
             ),
-            wesley.private_key,
-            beverly.public_key
+            wesley_forged
         )
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -188,12 +186,10 @@ req = Auth[TransferRequest].load(
                 ticket=beverly_ticket,
                 transfer_public_key=geordi.public_key
             ),
-            beverly.private_key,
-            beverly.public_key
+            beverly
         )
     ),
-    geordi.private_key,
-    geordi.public_key
+    geordi
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
 output(req, Auth[TransferResponse](**res.json()), res.status_code, 200)
@@ -216,8 +212,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=beverly_ticket
     ),
-    beverly.private_key,
-    beverly.public_key
+    beverly
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -242,12 +237,10 @@ req = Auth[TransferRequest].load(
                 ticket=beverly_ticket,
                 transfer_public_key=wesley.public_key
             ),
-            beverly.private_key,
-            beverly.public_key
+            beverly
         )
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -271,8 +264,7 @@ req = Auth[VerifyRequest].load(
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
@@ -305,8 +297,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=geordi_ticket
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 400)
@@ -330,8 +321,7 @@ req = Auth[VerifyRequest].load(
         check_public_key=geordi.public_key,
         stamp=True
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -355,8 +345,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=bad_ticket
     ),
-    geordi.private_key,
-    geordi.public_key
+    geordi
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -378,8 +367,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=geordi_ticket
     ),
-    geordi.private_key,
-    geordi.public_key
+    geordi
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[RedeemResponse](**res.json()), res.status_code, 200)
@@ -399,8 +387,7 @@ req = Auth[VerifyRequest].load(
         check_public_key=geordi.public_key,
         stamp=True
     ),
-    geordi.private_key,
-    geordi.public_key
+    geordi
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -420,8 +407,7 @@ req = Auth[VerifyRequest].load(
         check_public_key=geordi.public_key,
         stamp=True
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
@@ -453,8 +439,7 @@ req = Auth[VerifyRequest].load(
         check_public_key=geordi.public_key,
         stamp=True
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -478,8 +463,7 @@ req = Auth[VerifyRequest].load(
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
@@ -518,12 +502,10 @@ req = Auth[TransferRequest].load(
                 ticket=geordi_ticket,
                 transfer_public_key=beverly.public_key
             ),
-            geordi.private_key,
-            geordi.public_key
+            geordi
         )
     ),
-    beverly.private_key,
-    beverly.public_key
+    beverly
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -546,8 +528,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=geordi_ticket
     ),
-    geordi.private_key,
-    geordi.public_key
+    geordi
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -567,8 +548,7 @@ req = Auth[RegisterRequest].load(
     RegisterRequest(
         event_id=event_id_1
     ), 
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
@@ -589,8 +569,7 @@ req = Auth[CancelRequest].load(
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
-    beverly.private_key,
-    beverly.public_key
+    beverly
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -612,8 +591,7 @@ req = Auth[CancelRequest].load(
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
 output(req, Auth[CancelResponse](**res.json()), res.status_code, 200)
@@ -631,8 +609,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_1,
         ticket=wesley_ticket
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -656,12 +633,10 @@ req = Auth[TransferRequest].load(
                 ticket=wesley_ticket,
                 transfer_public_key=wesley.public_key
             ),
-            wesley.private_key,
-            wesley.public_key
+            wesley
         )
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -684,8 +659,7 @@ req = Auth[VerifyRequest].load(
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
-    jean_luc.private_key,
-    jean_luc.public_key
+    jean_luc
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
@@ -712,8 +686,7 @@ req = Auth[CreateRequest].load(
             transfer_limit=1
         )
     ),
-    william.private_key,
-    william.public_key
+    william
 )
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
 
@@ -780,8 +753,7 @@ req = Auth[RegisterRequest].load(
     RegisterRequest(
         event_id=event_id_1
     ), 
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
@@ -798,8 +770,7 @@ req = Auth[RedeemRequest].load(
         event_id=event_id_2,
         ticket=wesley_ticket
     ),
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -820,8 +791,7 @@ req = Auth[RegisterRequest].load(
     RegisterRequest(
         event_id=event_id_2
     ), 
-    deanna.private_key,
-    deanna.public_key
+    deanna
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -845,8 +815,7 @@ deanna_verification = Auth[Verification].load(
         transfer_limit=0,
         metadata="Imzadi <3"
     ),
-    william.private_key,
-    william.public_key
+    william
 )
 
 req = Auth[RegisterRequest].load(
@@ -854,8 +823,7 @@ req = Auth[RegisterRequest].load(
         event_id=event_id_2,
         verification=deanna_verification
     ), 
-    deanna.private_key,
-    deanna.public_key
+    deanna
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
@@ -875,8 +843,7 @@ req = Auth[RegisterRequest].load(
         event_id=event_id_2,
         verification=deanna_verification
     ), 
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -898,12 +865,10 @@ req = Auth[RegisterRequest].load(
                 public_key=wesley.public_key,
                 metadata="Imzadi <3"
             ),
-            wesley.private_key,
-            wesley.public_key
+            wesley
         )
     ), 
-    wesley.private_key,
-    wesley.public_key
+    wesley
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
@@ -912,7 +877,7 @@ assert res.json()["data"]["content"]["detail"] == "unauthorized signer", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'unauthorized signer'"
 )
 
-##########
+########## TODO - finish update and add wesley forged gen sig
 
 print(
     '"What about if I spoof the signature?" he thinks -- and so he creates ' \

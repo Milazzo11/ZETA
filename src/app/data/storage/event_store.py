@@ -8,11 +8,9 @@ Event model database integrations.
 
 from . import connection as db
 
-from typing import Optional
 
 
-
-def load_event(event_id: str) -> Optional[dict]:
+def load_event(event_id: str) -> dict | None:
     """
     Load event data from the database.
 
@@ -30,7 +28,7 @@ def load_event(event_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
-def load_event_key(event_id: str) -> Optional[bytes]:
+def load_event_key(event_id: str) -> bytes | None:
     """
     Load event ticket granting key from the database.
 
@@ -51,7 +49,7 @@ def load_event_key(event_id: str) -> Optional[bytes]:
     return None if row is None else bytes(row["event_key"])
 
 
-def load_owner_public_key(event_id: str) -> Optional[str]:
+def load_owner_public_key(event_id: str) -> str | None:
     """
     Load the event owner's public key from the database.
 

@@ -27,11 +27,8 @@ PRIVATE_KEY = PRIVATE_KEY.decode("utf-8")
 # load server private key from file
 
 
-with open(PUB_KEY_FILE, "rb") as f:
-    PUBLIC_KEY = f.read()
-
-PUBLIC_KEY = PUBLIC_KEY.decode("utf-8")
-# load server public key from file
+RESPONSE_SIGNER = AKC(private_key=PRIVATE_KEY)
+# server response signer cipher
 
 
 

@@ -11,7 +11,7 @@ from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
-from typing import Optional, Self, Union
+from typing import Any, Self
 
 
 
@@ -36,7 +36,7 @@ class VerifyResponse(BaseModel):
     """
 
     redeemed: bool = Field(..., description="User ticket redemption status")
-    stamped: Optional[bool] = Field(
+    stamped: bool | None = Field(
         ...,
         description="If true, ticket is stamped (for event owner only)"
     )
@@ -52,7 +52,7 @@ class VerifyResponse(BaseModel):
         le=TRANSFER_LIMIT,
         description="ticket transfer limit"
     )
-    metadata: Optional[Union[dict, str]] = Field(..., description="Ticket metadata")
+    metadata: Any = Field(..., description="Ticket metadata")
 
 
     @classmethod

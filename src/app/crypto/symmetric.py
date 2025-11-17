@@ -73,11 +73,8 @@ class AES:
             raise Exception("AES: invalid key length")
             # raise exception if invalid key size is passed
 
-        self.key_size = key_size
-        # store key size
-        
         if key is None:
-            self.key = AES.key(self.key_size)
+            self.key = AES.key(key_size)
             # generate key if none passed
 
         else:

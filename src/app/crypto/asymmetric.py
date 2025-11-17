@@ -63,11 +63,9 @@ class RSA:
         if key_size not in (1024, 2048, 4096):
             raise Exception("RSA: invalid key length")
 
-        self.key_size = key_size
-
         if private_key is None and public_key is None:
-            self._init_from_new_key()
-            # signer mode: generate new signer keypair
+            self._init_from_new_key(key_size)
+            # signer mode: generate new signer key pair
 
         elif private_key is not None:
             self._init_from_private_key(private_key)
@@ -78,14 +76,16 @@ class RSA:
             # verifier-only mode: must have public key
 
 
-    def _init_from_new_key(self) -> None:
+    def _init_from_new_key(self, key_size: int) -> None:
         """
         Generate a new private key and initialize signer fields.
+
+        :param key_size: key size (in bits)
         """
 
         private_key = rsa.generate_private_key(
             public_exponent=PUBLIC_EXPONENT,
-            key_size=self.key_size,
+            key_size=key_size,
             backend=default_backend(),
         )
 

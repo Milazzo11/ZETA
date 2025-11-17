@@ -139,4 +139,4 @@ class AES:
 
 
 SKC = AES
-# standard symmetric key encryption object
+# standard symmetric key encryption object (single-use)

@@ -29,6 +29,10 @@ class RSA:
     RSA cryptography signing object.
     """
 
+    private_key: str | None
+    public_key: str
+
+
     @staticmethod
     def _json_canon(data: dict) -> bytes:
         """

@@ -31,6 +31,10 @@ class AES:
     AES (CBC) cryptography object.
     """
 
+    key: bytes
+    iv: bytes
+
+
     @staticmethod
     def key(key_size: int = KEY_SIZE) -> bytes:
         """

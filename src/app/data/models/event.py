@@ -23,6 +23,51 @@ TRANSFER_LIMIT = (1 << 6) - 1
 
 
 
+class Permissions(BaseModel):
+    """
+    Event permission options.
+    """
+
+    cancel_ticket: bool = Field(
+        False,
+        description="Allow the user to cancel tickets for event"
+    )
+    update_ticket_flag: bool = Field(
+        False,
+        description="Allow the user to set a ticket's flag value"
+    )
+    authorize_registration: bool = Field(
+        False,
+        description="Allow the user to authorize restricted registrations for event"
+    )
+    see_stamped_ticket: bool = Field(
+        False,
+        description="Allow the user to view if tickets are stamped"
+    )
+    stamp_ticket: bool = Field(
+        False,
+        description="Allow the user to stamp tickets for event"
+    )
+
+
+    @classmethod
+    def load(cls, event_id: str) -> Self:
+        """
+        Load event permissions.
+
+        :param event_id: unique event identifier
+        :return: event permissions
+        """
+        
+        event = event_store.load_event(event_id)
+
+        if event is None:
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+
+        return cls(**event)
+
+
+
 class Event(BaseModel):
     """
     Public-facing event data model.
@@ -74,6 +119,7 @@ class Event(BaseModel):
         return key
 
 
+    ## TODO - replace with an is_owner or sum (maybe move to permissions)
     @staticmethod
     def get_owner_public_key(event_id: str) -> str:
         """

@@ -3,6 +3,10 @@ Testing/demonstration module.
 
 :author: Max Milazzo
 """
+## TODO -- change /verify to /validate
+## - include ticket number in validate tests
+## - do /flag tests
+## - do /permissions tests
 
 
 

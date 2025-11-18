@@ -89,7 +89,7 @@ async def validate_ticket(data: Auth[ValidateRequest]) -> Auth[ValidateResponse]
 
 
 @app.post("/flag", description="Set or retrieve a ticket's flag state")
-async def flag_ticket(data: Auth[ValidateRequest]) -> Auth[ValidateResponse]:
+async def flag_ticket(data: Auth[FlagRequest]) -> Auth[FlagResponse]:
     return API.flag_ticket(data)
 
 
@@ -101,6 +101,11 @@ async def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
 @app.post("/delete", description="Delete an event")
 async def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return API.delete_event(data)
+
+
+@app.post("/permissions", description="Edit or view event access permissions")
+async def update_permissions(data: Auth[PermissionsRequest]) -> Auth[PermissionsResponse]:
+    return API.update_permissions(data)
 
 
 @app.exception_handler(DomainException)

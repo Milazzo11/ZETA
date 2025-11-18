@@ -35,6 +35,7 @@ class ValidateResponse(BaseModel):
     /validate server response.
     """
 
+    number: int = Field(..., description="Unique ticket number")
     redeemed: bool = Field(..., description="User ticket redemption status")
     stamped: bool | None = Field(
         ...,
@@ -90,9 +91,10 @@ class ValidateResponse(BaseModel):
             stamped = None
 
         return cls(
+            number=ticket.number + 1, # 1-indexed ticket number
             redeemed=redeemed,
             stamped=stamped,
-            version=ticket.version + 1,  # 1-indexed version
+            version=ticket.version + 1, # 1-indexed version
             transfer_limit=ticket.transfer_limit,
             metadata=ticket.metadata
         )

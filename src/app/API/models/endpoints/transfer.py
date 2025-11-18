@@ -19,7 +19,7 @@ class Transfer(BaseModel):
     """
     Transfer validation block signed by current ticket holder.
     """
-        
+    
     ticket: str = Field(..., description="Ticket being transferred")
     transfer_public_key: str = Field(
         ...,

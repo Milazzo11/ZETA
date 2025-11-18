@@ -138,6 +138,20 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return Auth[DeleteResponse].load(response)
 
 
+def update_permissions(data: Auth[PermissionsRequest]) -> Auth[PermissionsResponse]:
+    """
+    /permissions request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
+    request = data.authenticate()
+    response = PermissionsResponse.generate(request, data.public_key)
+
+    return Auth[PermissionsResponse].load(response)
+
+
 def exception_handler(exception: DomainException) -> Auth[ErrorResponse]:
     """
     Produce a signed error response.

@@ -3,7 +3,7 @@
 
 
 from app.data.storage import permissions_store
-from app.crypto.symmetric import SKC
+from app.crypto import hash
 from app.error.errors import ErrorKind, DomainException
 
 import time
@@ -45,14 +45,26 @@ class Permissions(BaseModel):
         """
         """
 
+        public_key_hash = permissions_store.load_owner_public_key_hash(event_id)
+
+        if public_key_hash is None:
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+        
+        return hash.generate_bytes(check_public_key) == public_key_hash
+
 
     @staticmethod
-    def is_authorized(event_id: str, check_public_key: str) -> bool:
+    def is_authorized(event_id: str, check_public_key: str, permission: str) -> bool:
         """
         """
+
+        if permission not in Permissions.model_fields:
+            raise Exception(f"Incorrect permission: '{permission}'")
 
         if Permissions.is_owner(event_id, check_public_key):
             return True
+        
+        ## TODO - finish
 
 
     @classmethod

@@ -81,7 +81,7 @@ def db_setup() -> None:
                 CREATE TABLE IF NOT EXISTS event_data (
                     event_id TEXT PRIMARY KEY,
                     event_key BYTEA NOT NULL,
-                    owner_public_key TEXT NOT NULL,
+                    owner_public_key_hash BYTEA NOT NULL,
                     state_bytes BYTEA NOT NULL,
                     flag_bytes BYTEA,
                     FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE

@@ -171,7 +171,7 @@ class Ticket(BaseModel):
             ticket_data = decrypted_ticket["ticket"]
             ticket_string_raw = json.dumps(ticket_data)
             
-            if hash.generate(ticket_string_raw) != decrypted_ticket["hash"]:
+            if hash.generate_string(ticket_string_raw) != decrypted_ticket["hash"]:
                 raise DomainException(ErrorKind.PERMISSION, "ticket verification failed")
                 # check that the decrypted ticket's stored hash value is correct
                 # (error message purposefully kept vague for security)
@@ -184,7 +184,7 @@ class Ticket(BaseModel):
             # handle general decryption failure
             # (error message purposefully kept vague for security)
 
-        if ticket_data["public_key_hash"] != hash.generate(public_key):
+        if ticket_data["public_key_hash"] != hash.generate_string(public_key):
             raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
@@ -321,7 +321,7 @@ class Ticket(BaseModel):
 
         ticket_data = {
             "event_id": self.event_id,
-            "public_key_hash": hash.generate(self.public_key),
+            "public_key_hash": hash.generate_string(self.public_key),
             "number": self.number,
             "version": self.version,
             "transfer_limit": self.transfer_limit,
@@ -329,7 +329,7 @@ class Ticket(BaseModel):
         }
 
         ticket_string_raw = json.dumps(ticket_data)
-        ticket_string_hash = hash.generate(ticket_string_raw)
+        ticket_string_hash = hash.generate_string(ticket_string_raw)
 
         verif_data = {
             "ticket": ticket_data,

@@ -7,6 +7,7 @@ Event data model.
 
 
 from app.data.storage import event_store
+from app.crypto import hash
 from app.crypto.symmetric import SKC
 from app.error.errors import ErrorKind, DomainException
 
@@ -20,51 +21,6 @@ from typing import Self
 TRANSFER_LIMIT = (1 << 6) - 1
 # transfer limit value: 0b00111111
 # (transfer version data stored in low 6 bits)
-
-
-
-class Permissions(BaseModel):
-    """
-    Event permission options.
-    """
-
-    cancel_ticket: bool = Field(
-        False,
-        description="Allow the user to cancel tickets for event"
-    )
-    update_ticket_flag: bool = Field(
-        False,
-        description="Allow the user to set a ticket's flag value"
-    )
-    authorize_registration: bool = Field(
-        False,
-        description="Allow the user to authorize restricted registrations for event"
-    )
-    see_stamped_ticket: bool = Field(
-        False,
-        description="Allow the user to view if tickets are stamped"
-    )
-    stamp_ticket: bool = Field(
-        False,
-        description="Allow the user to stamp tickets for event"
-    )
-
-
-    @classmethod
-    def load(cls, event_id: str) -> Self:
-        """
-        Load event permissions.
-
-        :param event_id: unique event identifier
-        :return: event permissions
-        """
-        
-        event = event_store.load_event(event_id)
-
-        if event is None:
-            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
-
-        return cls(**event)
 
 
 
@@ -117,24 +73,6 @@ class Event(BaseModel):
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
         
         return key
-
-
-    ## TODO - replace with an is_owner or sum (maybe move to permissions)
-    @staticmethod
-    def get_owner_public_key(event_id: str) -> str:
-        """
-        Get event owner public key.
-
-        :param event_id: unique event identifier
-        :return: event owner public key
-        """
-
-        public_key = event_store.load_owner_public_key(event_id)
-
-        if public_key is None:
-            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
-        
-        return public_key
     
 
     @staticmethod
@@ -188,4 +126,8 @@ class Event(BaseModel):
         :param owner_public_key: public key of the event creator (owner)
         """
 
-        event_store.create(self.model_dump(), SKC.key(), owner_public_key)
+        event_store.create(
+            self.model_dump(),
+            SKC.key(),
+            hash.generate_bytes(owner_public_key)
+        )

@@ -49,27 +49,6 @@ def load_event_key(event_id: str) -> bytes | None:
     return None if row is None else bytes(row["event_key"])
 
 
-def load_owner_public_key(event_id: str) -> str | None:
-    """
-    Load the event owner's public key from the database.
-
-    :param event_id: unique event identifier
-    :return: the event owner's public key or None if not found
-    """
-
-    pool = db.get_pool()
-
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT owner_public_key FROM event_data WHERE event_id = %s;",
-                (event_id,)
-            )
-            row = cur.fetchone()
-
-    return None if row is None else str(row["owner_public_key"])
-
-
 def search(text: str, limit: int) -> list[dict]:
     """
     Search for an event in the database and load its data
@@ -93,13 +72,13 @@ def search(text: str, limit: int) -> list[dict]:
     return list(rows)
 
 
-def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
+def create(event: dict, event_key: bytes, owner_public_key_hash: bytes) -> None:
     """
     Create an event.
 
     :param event: event data dictionary
     :param event_key: event ticket granting key
-    :param owner_public_key: the event owner's public key
+    :param owner_public_key: hash value of the event owner's public key
     """
 
     pool = db.get_pool()
@@ -145,14 +124,14 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                 INSERT INTO event_data (
                     event_id,
                     event_key,
-                    owner_public_key,
+                    owner_public_key_hash,
                     state_bytes,
                     flag_bytes
                 )
                 VALUES (
                     %(event_id)s,
                     %(event_key)s,
-                    %(owner_public_key)s,
+                    %(owner_public_key_hash)s,
                     %(state_bytes)s,
                     %(flag_bytes)s
                 );
@@ -160,7 +139,7 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                 {
                     "event_id": event["id"],
                     "event_key": event_key,
-                    "owner_public_key": owner_public_key,
+                    "owner_public_key_hash": owner_public_key_hash,
                     "state_bytes": state_bytes,
                     "flag_bytes": flag_bytes
                 }

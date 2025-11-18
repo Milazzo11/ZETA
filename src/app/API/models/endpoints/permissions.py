@@ -7,15 +7,10 @@
 
 
 from app.data.models.permissions import Permissions
-from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
 from typing import Self
-
-
-
-
 
 
 
@@ -52,6 +47,18 @@ class PermissionsResponse(BaseModel):
         :return: server response
         """
 
-        # make an Event.GetPermissions
+        if not Permissions.is_owner(request.event_id, public_key):
+            raise DomainException(ErrorKind.PERMISSION, "not event owner")
+            # confirm user is the event owner
 
-        return cls()
+        if request.permissions is None:
+            return cls(
+                permissions=Permissions.load(
+                    request.event_id,
+                    request.target_public_key
+                )
+            )
+        
+        request.permissions.update(request.event_id, request.target_public_key)
+
+        return cls(permissions=request.permissions)

@@ -6,7 +6,7 @@
 
 
 
-from app.data.models.event import Event
+from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -57,10 +57,10 @@ class FlagResponse(BaseModel):
         update_requested = (request.value is not None) or (request.public is not None)
 
         if update_requested:
-            owner_public_key = Event.get_owner_public_key(request.event_id)
-
-            if public_key != owner_public_key:
-                raise DomainException(ErrorKind.PERMISSION, "not event owner")
+            permissions = Permissions.load(request.event_id, public_key)
+            
+            if not permissions.is_authorized("update_ticket_flag"):
+                raise DomainException(ErrorKind.PERMISSION, "permission denied")
                 # ensure that any state update attempts come from the event owner
 
         ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
@@ -72,9 +72,9 @@ class FlagResponse(BaseModel):
             value, is_public = ticket.get_flag()
 
             if not is_public:
-                owner_public_key = Event.get_owner_public_key(request.event_id)
+                permissions = Permissions.load(request.event_id, public_key)
 
-                if owner_public_key != public_key:
+                if not permissions.is_authorized("see_ticket_flag"):
                     raise DomainException(
                         ErrorKind.PERMISSION,
                         "ticket flag is not public"

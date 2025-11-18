@@ -22,6 +22,10 @@ class Permissions(BaseModel):
         False,
         description="Allow the user to cancel tickets for event"
     )
+    see_ticket_flag: bool = Field(
+        False,
+        description="Allow a user to see private ticket flags"
+    )
     update_ticket_flag: bool = Field(
         False,
         description="Allow the user to set a ticket's flag value"
@@ -53,20 +57,6 @@ class Permissions(BaseModel):
         return hash.generate_bytes(check_public_key) == public_key_hash
 
 
-    @staticmethod
-    def is_authorized(event_id: str, check_public_key: str, permission: str) -> bool:
-        """
-        """
-
-        if permission not in Permissions.model_fields:
-            raise Exception(f"Incorrect permission: '{permission}'")
-
-        if Permissions.is_owner(event_id, check_public_key):
-            return True
-        
-        ## TODO - finish
-
-
     @classmethod
     def load(cls, event_id: str, target_public_key: str) -> Self:
         """
@@ -76,19 +66,45 @@ class Permissions(BaseModel):
         :param target_public_key: public key of the target user for permission access
         :return: event permissions
         """
+
+        if Permissions.is_owner(event_id, target_public_key):
+            return cls(
+                cancel_ticket=True,
+                see_ticket_flag=True,
+                update_ticket_flag=True,
+                authorize_registration=True,
+                see_stamped_ticket=True,
+                stamp_ticket=True
+            )
+            # enable all permissions
         
         permissions = permissions_store.load_permissions(event_id, target_public_key)
 
         if permissions is None:
-            raise DomainException(ErrorKind.NOT_FOUND, "user permissions not found")
+            return cls()
+            # disable all permissions
 
         return cls(**permissions)
+
+
+    def is_authorized(self, permission: str) -> bool:
+        """
+        """
+
+        if permission not in Permissions.model_fields:
+            raise Exception(f"incorrect permission: '{permission}'")
+
+        return getattr(self, permission)
 
 
     def update(self, event_id: str, target_public_key: str) -> None:
         """
         Update event permissions.
         """
+
+        if all(not getattr(self, name) for name in Permissions.model_fields):
+            permissions_store.remove_permissions(event_id, target_public_key)
+            return
 
         permissions_store.update_permissions(
             event_id,

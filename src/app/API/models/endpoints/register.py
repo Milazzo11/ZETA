@@ -8,6 +8,7 @@
 
 from app.API.models.base import Auth
 from app.data.models.event import Event, TRANSFER_LIMIT
+from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -90,11 +91,14 @@ class RegisterResponse(BaseModel):
                 )
                 # confirm verification is for the requesting user
 
-            owner_public_key = Event.get_owner_public_key(request.event_id)
+            permissions = Permissions.load(
+                request.event_id,
+                request.verification.public_key
+            )
 
-            if request.verification.public_key != owner_public_key:
+            if not permissions.is_authorized("authorize_registration"):
                 raise DomainException(ErrorKind.PERMISSION, "unauthorized signer")
-                # confirm verification is signed by the event owner
+                # confirm verification is signed by an authorized party
 
             request.verification.authenticate()
             # authenticate verification block

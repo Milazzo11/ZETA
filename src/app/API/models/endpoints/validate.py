@@ -6,7 +6,8 @@
 
 
 
-from app.data.models.event import Event, TRANSFER_LIMIT
+from app.data.models.event import TRANSFER_LIMIT
+from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -65,19 +66,12 @@ class ValidateResponse(BaseModel):
         :return: server response
         """
 
-        is_ticket_holder = (request.check_public_key == public_key)
-        is_event_owner = False
+        if request.stamp:
+            permissions = Permissions.load(request.event_id, public_key)
 
-        if not is_ticket_holder or request.stamp:
-            owner_public_key = Event.get_owner_public_key(request.event_id)
-            is_event_owner = (owner_public_key == public_key)
-            
-            if request.stamp and not is_event_owner:
-                raise DomainException(
-                    ErrorKind.PERMISSION,
-                    "only event owners may stamp tickets"
-                )
-                # ensure that any ticket stamp attempts come from the event owner
+            if not permissions.is_authorized("stamp_ticket"):
+                raise DomainException(ErrorKind.PERMISSION, "permission denied")
+                # confirm user is an authorized party
 
         ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
 
@@ -87,8 +81,12 @@ class ValidateResponse(BaseModel):
         else:
             redeemed, stamped = ticket.verify()
 
-        if not (is_ticket_holder or is_event_owner):
-            stamped = None
+        if request.check_public_key != public_key:
+            permissions = Permissions.load(request.event_id, public_key)
+
+            if not permissions.is_authorized("see_stamped_ticket"):
+                stamped = None
+                # remove stamped status for unauthorized requesters
 
         return cls(
             number=ticket.number + 1, # 1-indexed ticket number

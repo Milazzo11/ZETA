@@ -6,7 +6,7 @@
 
 
 
-from app.data.models.event import Event
+from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -42,11 +42,11 @@ class CancelResponse(BaseModel):
         :return: server response
         """
 
-        owner_public_key = Event.get_owner_public_key(request.event_id)
+        permissions = Permissions.load(request.event_id, public_key)
 
-        if owner_public_key != public_key:
-            raise DomainException(ErrorKind.PERMISSION, "not event owner")
-            # confirm user is the event owner (via recorded public key)
+        if not permissions.is_authorized("cancel_ticket"):
+            raise DomainException(ErrorKind.PERMISSION, "permission denied")
+            # confirm user is an authorized party
 
         ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
         ticket.cancel()

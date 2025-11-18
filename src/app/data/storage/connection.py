@@ -45,7 +45,7 @@ def stop_pool() -> None:
     global pool
 
     if pool is None:
-        raise Exception("Database connection pool not started")
+        raise Exception("database connection pool not started")
 
     pool.close()
 
@@ -58,6 +58,6 @@ def get_pool() -> ConnectionPool:
     """
 
     if pool is None:
-        raise Exception("Database connection pool not started")
+        raise Exception("database connection pool not started")
 
     return pool

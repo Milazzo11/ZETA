@@ -84,7 +84,28 @@ def db_setup() -> None:
                     owner_public_key_hash BYTEA NOT NULL,
                     state_bytes BYTEA NOT NULL,
                     flag_bytes BYTEA,
-                    FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE
+                    FOREIGN KEY (event_id)
+                        REFERENCES events (id)
+                        ON DELETE CASCADE
+                );
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS event_permissions (
+                    event_id TEXT NOT NULL,
+                    public_key_hash BYTEA NOT NULL,
+                    cancel_ticket BOOLEAN NOT NULL DEFAULT FALSE,
+                    see_ticket_flag BOOLEAN NOT NULL DEFAULT FALSE,
+                    update_ticket_flag BOOLEAN NOT NULL DEFAULT FALSE,
+                    authorize_registration BOOLEAN NOT NULL DEFAULT FALSE,
+                    see_stamped_ticket BOOLEAN NOT NULL DEFAULT FALSE,
+                    stamp_ticket BOOLEAN NOT NULL DEFAULT FALSE,
+                    PRIMARY KEY (event_id, public_key_hash),
+                    FOREIGN KEY (event_id)
+                        REFERENCES events (id)
+                        ON DELETE CASCADE
                 );
                 """
             )

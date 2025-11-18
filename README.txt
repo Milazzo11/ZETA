@@ -22,7 +22,7 @@ API Endpoints:
 
 /redeem -- The redeem endpoint allows the ticket holder to prove possession and request redemption.  The holder signs the request with his key and submits the encrypted ticket.  The server confirms the ticket belongs to him and has not been used or canceled.
 
-/verify -- The verify endpoint allows the event owner to check the ticket state and optionally stamp it.  Stamping finalizes the redemption and prevents future reuse.  Owners can also verify without stamping, but stamping is what enforces the one-use rule.  Non-owners can verify only in a limited read-only mode; they never see stamp status and cannot modify state.
+/validate -- The validate endpoint allows the event owner to check the ticket state and optionally stamp it.  Stamping finalizes the redemption and prevents future reuse.  Owners can also verify without stamping, but stamping is what enforces the one-use rule.  Non-owners can verify only in a limited read-only mode; they never see stamp status and cannot modify state.
 
 /cancel -- The cancel endpoint allows an event owner to invalidate a ticket.  Once canceled, the ticket can no longer be redeemed, stamped, or transferred.  Cancellation is final.
 

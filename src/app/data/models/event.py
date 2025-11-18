@@ -43,13 +43,17 @@ class Event(BaseModel):
     )
     restricted: bool = Field(
         False,
-        description="Specifies whether event is open or restricted (requires authorization)"
+        description="Specifies if event is open or restricted (requires authorization)"
     )
     transfer_limit: int = Field(
         TRANSFER_LIMIT,
         ge=0,
         le=TRANSFER_LIMIT,
         description="Default maximum number of allowed ticket transfers"
+    )
+    enable_flags: bool = Field(
+        False,
+        description="Specifies if event supports custom post-redemption flag state"
     )
 
 

@@ -83,6 +83,7 @@ def db_setup() -> None:
                     event_key BYTEA NOT NULL,
                     owner_public_key TEXT NOT NULL,
                     state_bytes BYTEA NOT NULL,
+                    flag_bytes BYTEA,
                     FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE
                 );
                 """

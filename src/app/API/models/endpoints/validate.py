@@ -1,5 +1,5 @@
 """
-/verify endpoint data packet models.
+/validate endpoint data packet models.
 
 :author: Max Milazzo
 """
@@ -15,13 +15,13 @@ from typing import Any, Self
 
 
 
-class VerifyRequest(BaseModel):
+class ValidateRequest(BaseModel):
     """
-    /verify user request.
+    /validate user request.
     """
 
-    event_id: str = Field(..., description="Event ID of the ticket being verified")
-    ticket: str = Field(..., description="Ticket string being verified")
+    event_id: str = Field(..., description="Event ID of the ticket being validated")
+    ticket: str = Field(..., description="Ticket string being validated")
     check_public_key: str = Field(..., description="Public key of the ticket holder")
     stamp: bool = Field(
         False,
@@ -30,9 +30,9 @@ class VerifyRequest(BaseModel):
 
 
 
-class VerifyResponse(BaseModel):
+class ValidateResponse(BaseModel):
     """
-    /verify server response.
+    /validate server response.
     """
 
     redeemed: bool = Field(..., description="User ticket redemption status")
@@ -56,7 +56,7 @@ class VerifyResponse(BaseModel):
 
 
     @classmethod
-    def generate(cls, request: VerifyRequest, public_key: str) -> Self:
+    def generate(cls, request: ValidateRequest, public_key: str) -> Self:
         """
         Generate the server response from a user request.
 
@@ -78,14 +78,11 @@ class VerifyResponse(BaseModel):
                 )
                 # ensure that any ticket stamp attempts come from the event owner
 
-        ticket = Ticket.load(
-            request.event_id,
-            request.check_public_key,
-            request.ticket
-        )
+        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
 
         if request.stamp:
-            redeemed, stamped = ticket.stamp()
+            ticket.stamp()
+            redeemed, stamped = True, True
         else:
             redeemed, stamped = ticket.verify()
 

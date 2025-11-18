@@ -116,3 +116,57 @@ def load_state_byte(event_id: str, ticket_number: int) -> int | None:
             row = cur.fetchone()
 
     return None if row is None else int(row["state_byte"])
+
+
+def set_flag(event_id: str, ticket_number: int, value: int) -> bool:
+    """
+    Set the flag byte at the given ticket index and return its new value.
+
+    :param event_id: ID of the event
+    :param ticket_number: 0-indexed ticket number
+    :param value: new byte value (already validated 0–255)
+    :return: set success status
+    """
+
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE event_data
+                SET flag_bytes = set_byte(flag_bytes, %s, %s)
+                WHERE event_id = %s
+                    AND flag_bytes IS NOT NULL;
+                """,
+                (ticket_number, value, event_id)
+            )
+
+            return cur.rowcount == 1
+
+
+def get_flag(event_id: str, ticket_number: int) -> int | None:
+    """
+    Get a ticket's flag value.
+
+    :param event_id: unique event identifier
+    :param ticket_number: ticket issue number
+    :return: ticket flag value.
+    """
+
+    pool = db.get_pool()
+
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT get_byte(flag_bytes, %s) AS flag_byte
+                FROM event_data
+                WHERE event_id = %s
+                    AND flag_bytes IS NOT NULL;
+                """,
+                (ticket_number, event_id)
+            )
+            row = cur.fetchone()
+
+    return None if row is None else int(row["flag_byte"])

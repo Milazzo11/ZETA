@@ -83,9 +83,14 @@ async def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
     return API.redeem_ticket(data)
 
 
-@app.post("/verify", description="Verify that a user has redeemed his ticket")
-async def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
-    return API.verify_redemption(data)
+@app.post("/validate", description="Validate a ticket and optionally stamp it")
+async def validate_ticket(data: Auth[ValidateRequest]) -> Auth[ValidateResponse]:
+    return API.validate_ticket(data)
+
+
+@app.post("/flag", description="Set or retrieve a ticket's flag state")
+async def flag_ticket(data: Auth[ValidateRequest]) -> Auth[ValidateResponse]:
+    return API.flag_ticket(data)
 
 
 @app.post("/cancel", description="Cancel an event attendee's ticket")

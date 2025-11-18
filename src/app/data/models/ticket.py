@@ -253,11 +253,9 @@ class Ticket(BaseModel):
         return byte >= REDEEMED_BYTE, byte >= STAMPED_BYTE
 
 
-    def stamp(self) -> tuple[bool, bool]:
+    def stamp(self) -> None:
         """
         Stamp the current ticket.
-
-        :return: redemption status (True), stamped status (True)
         """
 
         redeemed, stamped = self.verify()
@@ -275,8 +273,32 @@ class Ticket(BaseModel):
             STAMPED_BYTE
         ):
             raise DomainException(ErrorKind.CONFLICT, "ticket stamping failed")
+
+
+    def set_flag(self, value: int) -> None:
+        """
+        Set the ticket flag.
+
+        :param value: new flag value
+        """
+
+        if not ticket_store.set_flag(self.event_id, self.number, value):
+            raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
+    
+
+    def get_flag(self) -> int:
+        """
+        Get the ticket flag.
+
+        :return: current ticket flag
+        """
+
+        flag = ticket_store.get_flag(self.event_id, self.number)
+
+        if flag is None:
+            raise DomainException(ErrorKind.CONFLICT, "ticket flag get failed")
         
-        return True, True
+        return flag
 
 
     def pack(self) -> str:

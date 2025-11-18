@@ -284,8 +284,8 @@ print(
     "to promote transfer transparency... but Wesley plans to use it for evil!"
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
@@ -293,7 +293,7 @@ req = Auth[VerifyRequest].load(
     wesley
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == False, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != False"
@@ -340,8 +340,8 @@ print(
     "stamping request in an attempt to confirm and mark Geordi as admitted."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
@@ -406,8 +406,8 @@ assert res.json()["data"]["content"]["success"] == True, (
 
 print("Without thinking, Geordi then attempts to stamp his own ticket.")
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
@@ -426,8 +426,8 @@ assert res.json()["data"]["content"]["detail"] == "only event owners may stamp t
 
 print("Finally, Jean-Luc sends a proper verify/stamp request to admit Geordi")
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
@@ -436,7 +436,7 @@ req = Auth[VerifyRequest].load(
     jean_luc
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -458,8 +458,8 @@ assert res.json()["data"]["content"]["metadata"] is None, (
 
 print("...And just to make sure, he stamps it for a second time too!")
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
@@ -483,8 +483,8 @@ print(
     "or not Geordi was stamped and admitted."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
@@ -492,7 +492,7 @@ req = Auth[VerifyRequest].load(
     wesley
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -679,8 +679,8 @@ print(
     "ticket to Jean-Luc, who attempts to stamp it."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_1,
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
@@ -1000,8 +1000,8 @@ print(
     "she makes a /verify request to confirm it."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_2,
         ticket=beverly_ticket,
         check_public_key=beverly.public_key
@@ -1009,7 +1009,7 @@ req = Auth[VerifyRequest].load(
     beverly
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == False, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -1143,8 +1143,8 @@ print(
     "can see the custom metadata that he had set earlier."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_2,
         ticket=deanna_ticket,
         check_public_key=deanna.public_key,
@@ -1153,7 +1153,7 @@ req = Auth[VerifyRequest].load(
     william
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
@@ -1178,8 +1178,8 @@ print(
     "make another verify request to show her (no stamp)."
 )
 
-req = Auth[VerifyRequest].load(
-    VerifyRequest(
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
         event_id=event_id_2,
         ticket=deanna_ticket,
         check_public_key=deanna.public_key
@@ -1187,7 +1187,7 @@ req = Auth[VerifyRequest].load(
     william
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"

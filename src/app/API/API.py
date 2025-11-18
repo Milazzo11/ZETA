@@ -82,18 +82,32 @@ def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
     return Auth[RedeemResponse].load(response)
 
 
-def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
+def validate_ticket(data: Auth[ValidateRequest]) -> Auth[ValidateResponse]:
     """
-    /verify request flow.
+    /validate request flow.
 
     :param data: user request
     :return: server response
     """
 
     request = data.authenticate()
-    response = VerifyResponse.generate(request, data.public_key)
+    response = ValidateResponse.generate(request, data.public_key)
 
-    return Auth[VerifyResponse].load(response)
+    return Auth[ValidateResponse].load(response)
+
+
+def flag_ticket(data: Auth[FlagRequest]) -> Auth[FlagResponse]:
+    """
+    /flag request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
+    request = data.authenticate()
+    response = FlagResponse.generate(request, data.public_key)
+
+    return Auth[FlagResponse].load(response)
 
 
 def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:

@@ -103,7 +103,9 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
     """
 
     pool = db.get_pool()
+
     state_bytes = b"\x00" * int(event["tickets"])
+    flag_bytes = b"\x00" * int(event["tickets"]) if event["enable_flags"] else None
 
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -118,7 +120,8 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     start,
                     finish,
                     restricted,
-                    transfer_limit
+                    transfer_limit,
+                    enable_flags
                 )
                 VALUES (
                     %(id)s,
@@ -129,7 +132,8 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     %(start)s,
                     %(finish)s,
                     %(restricted)s,
-                    %(transfer_limit)s
+                    %(transfer_limit)s,
+                    %(enable_flags)s
                 );
                 """,
                 event
@@ -142,20 +146,23 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     event_id,
                     event_key,
                     owner_public_key,
-                    state_bytes
+                    state_bytes,
+                    flag_bytes
                 )
                 VALUES (
                     %(event_id)s,
                     %(event_key)s,
                     %(owner_public_key)s,
-                    %(state_bytes)s
+                    %(state_bytes)s,
+                    %(flag_bytes)s
                 );
                 """,
                 {
                     "event_id": event["id"],
                     "event_key": event_key,
                     "owner_public_key": owner_public_key,
-                    "state_bytes": state_bytes
+                    "state_bytes": state_bytes,
+                    "flag_bytes": flag_bytes
                 }
             )
             # create non-public event data row

@@ -64,12 +64,12 @@ class ValidateResponse(BaseModel):
         :return: server response
         """
 
-        is_event_owner = False
         is_ticket_holder = (request.check_public_key == public_key)
+        is_event_owner = False
 
         if not is_ticket_holder or request.stamp:
             owner_public_key = Event.get_owner_public_key(request.event_id)
-            is_event_owner = (public_key == owner_public_key)
+            is_event_owner = (owner_public_key == public_key)
             
             if request.stamp and not is_event_owner:
                 raise DomainException(

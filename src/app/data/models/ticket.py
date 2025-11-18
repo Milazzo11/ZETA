@@ -31,6 +31,10 @@ CANCELED_BYTE = STAMPED_BYTE | REDEEMED_BYTE
 # canceled byte value: 0b11000000
 
 
+FLAG_PUBLIC_TOGGLE_BYTE = 1 << 7
+# flag public toggle byte value is: 0b10000000
+# (0b00000000 => private, 0b10000000 => public)
+
 
 class Ticket(BaseModel):
     """
@@ -282,23 +286,30 @@ class Ticket(BaseModel):
         :param value: new flag value
         """
 
-        if not ticket_store.set_flag(self.event_id, self.number, value):
+        if not ticket_store.set_flag(
+            self.event_id,
+            self.number,
+            value | FLAG_PUBLIC_TOGGLE_BYTE
+        ):
             raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
     
 
-    def get_flag(self) -> int:
+    def get_flag(self) -> tuple[int, bool]:
         """
         Get the ticket flag.
 
-        :return: current ticket flag
+        :return: current ticket flag, public visibility
         """
 
         flag = ticket_store.get_flag(self.event_id, self.number)
 
         if flag is None:
-            raise DomainException(ErrorKind.CONFLICT, "ticket flag get failed")
+            raise DomainException(ErrorKind.CONFLICT, "ticket flag retrieval failed")
         
-        return flag
+        if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
+            return flag, True
+        
+        return flag, False
 
 
     def pack(self) -> str:

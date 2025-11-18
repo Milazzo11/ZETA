@@ -23,11 +23,15 @@ class FlagRequest(BaseModel):
     event_id: str = Field(..., description="Event ID of the flagged ticket")
     ticket: str = Field(..., description="Flagged ticket string")
     check_public_key: str = Field(..., description="Public key of the ticket holder")
-    set: int | None = Field(
+    value: int | None = Field(
         None,
         ge=0,
-        le=255,
-        description="New flag value; omit to leave unchanged"
+        le=127,
+        description="New flag value; omit to leave unchanged (for event owner only)"
+    )
+    public: bool | None = Field(
+        False,
+        description="Toggle public flag public visibility (for event owner only)"
     )
 
 
@@ -37,7 +41,8 @@ class FlagResponse(BaseModel):
     /flag server response.
     """
 
-    flag: int = Field(..., description="Ticket flag value")
+    value: int = Field(..., description="Ticket flag value")
+    is_public: bool = Field(..., description="Public flag public visibility")
 
 
     @classmethod
@@ -49,18 +54,31 @@ class FlagResponse(BaseModel):
         :return: server response
         """
 
-        owner_public_key = Event.get_owner_public_key(request.event_id)
+        update_requested = (request.value is not None) or (request.public is not None)
 
-        if owner_public_key != public_key:
-            raise DomainException(ErrorKind.PERMISSION, "not event owner")
-            # confirm user is the event owner (via recorded public key)
+        if update_requested:
+            owner_public_key = Event.get_owner_public_key(request.event_id)
+
+            if public_key != owner_public_key:
+                raise DomainException(ErrorKind.PERMISSION, "not event owner")
+                # ensure that any state update attempts come from the event owner
 
         ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
 
-        if request.set is None:
-            flag = ticket.get_flag()
+        if update_requested:
+            ticket.set_flag(request.value, request.public)
+            value, is_public = request.value, request.public
         else:
-            ticket.set_flag(request.set)
-            flag = request.set
+            value, is_public = ticket.get_flag()
 
-        return cls(flag=flag)
+            if not is_public:
+                owner_public_key = Event.get_owner_public_key(request.event_id)
+
+                if owner_public_key != public_key:
+                    raise DomainException(
+                        ErrorKind.PERMISSION,
+                        "ticket flag is not public"
+                    )
+                    # ensure that non-public flag state is only seen by the event owner
+
+        return cls(value=value, is_public=is_public)

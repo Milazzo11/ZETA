@@ -46,7 +46,7 @@ def load_event_key(event_id: str) -> bytes | None:
             )
             row = cur.fetchone()
         
-    return None if row is None else bytes(row["event_key"])
+    return bytes(row["event_key"]) if row else None
 
 
 def search(text: str, limit: int) -> list[dict]:

@@ -33,8 +33,8 @@ def issue(event_id: str) -> int | None:
                 (event_id,)
             )
             row = cur.fetchone()
-        
-    return None if row is None else int(row["issued"]) - 1
+    
+    return int(row["issued"]) - 1 if row else None
 
 
 def reissue(event_id: str, ticket_number: int, version: int) -> bool:
@@ -115,7 +115,7 @@ def load_state_byte(event_id: str, ticket_number: int) -> int | None:
             )
             row = cur.fetchone()
 
-    return None if row is None else int(row["state_byte"])
+    return int(row["state_byte"]) if row else None
 
 
 def set_flag(event_id: str, ticket_number: int, value: int) -> bool:
@@ -169,4 +169,4 @@ def get_flag(event_id: str, ticket_number: int) -> int | None:
             )
             row = cur.fetchone()
 
-    return None if row is None else int(row["flag_byte"])
+    return int(row["flag_byte"]) if row else None

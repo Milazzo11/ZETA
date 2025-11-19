@@ -27,7 +27,7 @@ class CancelRequest(BaseModel):
         None,
         ge=0,
         le=TRANSFER_LIMIT,
-        description="Optional cancelation audit flag value"
+        description="Optional cancelation audit flag value to set"
     )
 
 

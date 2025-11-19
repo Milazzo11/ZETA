@@ -1707,9 +1707,7 @@ assert jean_luc_ticket is not None, "None is None"
 
 ##########
 
-print(
-    "Jean-Luc shows up for the date and redeems his ticket."
-)
+print("Jean-Luc shows up for the date (for some reason) and redeems his ticket.")
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
@@ -1832,9 +1830,7 @@ assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == True, (
 
 ##########
 
-print(
-    "With her newly granted permissions, Leah stamps Jean-Luc's ticket."
-)
+print("With her newly granted permissions, Leah stamps Jean-Luc's ticket.")
 
 req = Auth[ValidateRequest].load(
     ValidateRequest(
@@ -2000,7 +1996,7 @@ assert res.json()["data"]["content"]["detail"] == "not event owner", (
 ##########
 
 print(
-    "Curious what the default state looks like, Geordi queries permissions " \
+    "Curious what the default state looks like, Geordi queries /permissions " \
     "for Wesley, who has not been explicitly granted any access."
 )
 
@@ -2057,7 +2053,7 @@ assert res.json()["data"]["content"]["detail"] == "permission denied", (
 
 ##########
 
-print("At the conclusion of their date, Geordi revoke's Leah's access")
+print("At the conclusion of their date, Geordi revokes Leah's access")
 
 req = Auth[PermissionsRequest].load(
     PermissionsRequest(

@@ -85,8 +85,20 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
                 SET state_bytes = set_byte(state_bytes, %s, %s)
                 WHERE event_id = %s
                     AND get_byte(state_bytes, %s) < %s
+                    AND %s < (
+                        SELECT issued
+                        FROM events
+                        WHERE id = %s
+                    );
                 """,
-                (ticket_number, data, event_id, ticket_number, threshold)
+                (
+                    ticket_number,
+                    data, event_id,
+                    ticket_number,
+                    threshold,
+                    ticket_number,
+                    event_id
+                )
             )
 
             return cur.rowcount == 1

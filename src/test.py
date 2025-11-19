@@ -808,6 +808,48 @@ assert res.json()["data"]["content"]["detail"] == "ticket cancelation failed", (
 ##########
 
 print(
+    "William decides instead to set a flag for the first ticket index " \
+    "instead, because he still thinks Wesley is going to acquire it " \
+    "somehow... unfortunately for him, flags are not enabled for his event."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_2,
+        ticket_number=1,
+        value=1,
+        public=False
+    ),
+    william
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
+
+assert res.json()["data"]["content"]["detail"] == "ticket flag set failed", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket flag set failed'"
+)
+
+##########
+
+print("Maybe he can still get the current flag, though?")
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_2,
+        ticket_number=1,
+    ),
+    william
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
+
+assert res.json()["data"]["content"]["detail"] == "ticket flag retrieval failed", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket flag retrieval failed'"
+)
+
+##########
+
+print(
     "Wesley has a new idea now, though... he knows Jean-Luc's old event has " \
     "not yet been removed from the system, and so he registers a new ticket."
 )
@@ -1380,3 +1422,48 @@ print(
     "I'm too lazy to write more story, so this time Deanna creates a new " \
     "event to test /flag and /permissions functionality."
 )
+
+req = Auth[CreateRequest].load(
+    CreateRequest(
+        event=Event(
+            name="Test event",
+            description="Test",
+            tickets=16,
+            restricted=True,
+            transfer_limit=63,
+            enable_flags=True
+        )
+    ),
+    jean_luc
+)
+res = requests.post(SERVER_URL + "/create", json=req.model_dump())
+output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
+
+event_id_1 = res.json()["data"]["content"]["event_id"]
+assert len(event_id_1) == 36, f"{len(event_id_1)} != 36"
+
+##########
+
+# Deanna give all perms except one to William
+
+# William does all "restricted actions" -- all work except that one
+
+# Deanna updates his perms and that one now works
+
+# William still cannot access /permissions or /delete tho even with all perms
+
+# Wesley tries anauthorized access for eveything that hasnt been tested yet
+
+# William sets flag
+
+# William perms are set to all False (do one time check in db for deletion)
+
+# Deanna gets flag value
+
+# Geordi tries to get flag value but it is private
+
+# Deanna makes it public, then Geordi can see it
+
+# Deanna alters just the value
+
+# Geordi sees it has been updated

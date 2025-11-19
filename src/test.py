@@ -1520,7 +1520,8 @@ print(
 req = Auth[CancelRequest].load(
     CancelRequest(
         event_id=event_id_3,
-        ticket_number=1
+        ticket_number=1,
+        audit_flag=4
     ),
     leah
 )

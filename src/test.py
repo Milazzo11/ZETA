@@ -1659,7 +1659,7 @@ req = Auth[FlagRequest].load(
     FlagRequest(
         event_id=event_id_3,
         ticket_number=1,
-        value=67,
+        value=103,
         public=False
     ),
     leah
@@ -1667,8 +1667,8 @@ req = Auth[FlagRequest].load(
 res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
 output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
 
-assert res.json()["data"]["content"]["value"] == 67, (
-    f"{repr(res.json()['data']['content']['value'])} != 67"
+assert res.json()["data"]["content"]["value"] == 103, (
+    f"{repr(res.json()['data']['content']['value'])} != 103"
 )
 assert res.json()["data"]["content"]["public"] is False, (
     f"{repr(res.json()['data']['content']['public'])} != False"

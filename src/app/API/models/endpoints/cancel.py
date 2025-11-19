@@ -7,6 +7,7 @@
 
 
 from app.data.models.permissions import Permissions
+from app.data.models.event import TRANSFER_LIMIT
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -21,8 +22,13 @@ class CancelRequest(BaseModel):
     """
 
     event_id: str = Field(..., description="Event ID of the ticket being canceled")
-    ticket: str = Field(..., description="Ticket string to cancel")
-    check_public_key: str = Field(..., description="Public key of the ticket holder")
+    ticket_number: str = Field(..., description="Ticket number to cancel")
+    audit_flag: int | None = Field(
+        None,
+        ge=0,
+        le=TRANSFER_LIMIT,
+        description="Optional cancelation audit flag value"
+    )
 
 
 
@@ -48,7 +54,6 @@ class CancelResponse(BaseModel):
             raise DomainException(ErrorKind.PERMISSION, "permission denied")
             # confirm user is an authorized party
 
-        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-        ticket.cancel()
+        Ticket.cancel(request.event_id, request.ticket_number, request.audit_flag)
 
         return cls(success=True)

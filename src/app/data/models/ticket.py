@@ -36,6 +36,7 @@ FLAG_PUBLIC_TOGGLE_BYTE = 1 << 7
 # (0b00000000 => private, 0b10000000 => public)
 
 
+
 class Ticket(BaseModel):
     """
     User ticket data model.
@@ -48,6 +49,65 @@ class Ticket(BaseModel):
     transfer_limit: int
     metadata: Any
     event_key: bytes
+
+
+    @staticmethod
+    def set_flag(event_id: str, number: int, value: int, public: bool) -> None:
+        """
+        Set the ticket flag.
+
+        :param event_id: unique event identifier
+        :param number: ticket issue number
+        :param value: new flag value
+        :param public: public visibility
+        """
+
+        if public:
+            value = value | FLAG_PUBLIC_TOGGLE_BYTE
+
+        if not ticket_store.set_flag(event_id, number, value):
+            raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
+
+
+    @staticmethod
+    def get_flag(event_id: str, number: int) -> tuple[int, bool]:
+        """
+        Get the ticket flag.
+
+        :param event_id: unique event identifier
+        :param number: ticket issue number
+
+        :return: current ticket flag, public visibility
+        """
+
+        flag = ticket_store.get_flag(event_id, number)
+
+        if flag is None:
+            raise DomainException(ErrorKind.CONFLICT, "ticket flag retrieval failed")
+        
+        if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
+            return flag, True
+        
+        return flag, False
+
+
+    @staticmethod
+    def cancel(event_id: str, number: int, audit_flag: int) -> None:
+        """
+        Cancel a ticket.
+
+        :param event_id: unique event identifier
+        :param number: ticket issue number
+        :param audit_flag: flag value to replace transfer state bits
+        """
+
+        if not ticket_store.advance_state(
+            event_id,
+            number,
+            audit_flag | CANCELED_BYTE,
+            CANCELED_BYTE
+        ):
+            raise DomainException(ErrorKind.CONFLICT, "ticket cancelation failed")
 
 
     @staticmethod
@@ -225,20 +285,6 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.CONFLICT, "ticket redemption failed")
         
 
-    def cancel(self) -> None:
-        """
-        Cancel the current ticket.
-        """
-
-        if not ticket_store.advance_state(
-            self.event_id,
-            self.number,
-            self.version | CANCELED_BYTE,
-            CANCELED_BYTE
-        ):
-            raise DomainException(ErrorKind.CONFLICT, "ticket cancelation failed")
-        
-
     def verify(self) -> tuple[bool, bool]:
         """
         Verify redemption and stamped status of the current ticket.
@@ -277,39 +323,6 @@ class Ticket(BaseModel):
             STAMPED_BYTE
         ):
             raise DomainException(ErrorKind.CONFLICT, "ticket stamping failed")
-
-
-    def set_flag(self, value: int) -> None:
-        """
-        Set the ticket flag.
-
-        :param value: new flag value
-        """
-
-        if not ticket_store.set_flag(
-            self.event_id,
-            self.number,
-            value | FLAG_PUBLIC_TOGGLE_BYTE
-        ):
-            raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
-    
-
-    def get_flag(self) -> tuple[int, bool]:
-        """
-        Get the ticket flag.
-
-        :return: current ticket flag, public visibility
-        """
-
-        flag = ticket_store.get_flag(self.event_id, self.number)
-
-        if flag is None:
-            raise DomainException(ErrorKind.CONFLICT, "ticket flag retrieval failed")
-        
-        if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
-            return flag, True
-        
-        return flag, False
 
 
     def pack(self) -> str:

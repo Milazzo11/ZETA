@@ -7,7 +7,7 @@
 
 
 from app.data.models.permissions import Permissions
-from app.data.models.ticket import Ticket
+from app.data.models.ticket import Ticket, FLAG_PUBLIC_TOGGLE_BYTE
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
@@ -21,17 +21,16 @@ class FlagRequest(BaseModel):
     """
 
     event_id: str = Field(..., description="Event ID of the flagged ticket")
-    ticket: str = Field(..., description="Flagged ticket string")
-    check_public_key: str = Field(..., description="Public key of the ticket holder")
+    ticket_number: int = Field(..., description="Flagged ticket number")
     value: int | None = Field(
         None,
         ge=0,
-        le=127,
+        le=FLAG_PUBLIC_TOGGLE_BYTE - 1,
         description="New flag value; omit to leave unchanged (for event owner only)"
     )
     public: bool | None = Field(
         False,
-        description="Toggle public flag public visibility (for event owner only)"
+        description="Toggle public flag visibility (for event owner only)"
     )
 
 
@@ -54,22 +53,30 @@ class FlagResponse(BaseModel):
         :return: server response
         """
 
-        update_requested = (request.value is not None) or (request.public is not None)
+        if (request.value is None) != (request.public is None):
+            raise DomainException(
+                ErrorKind.VALIDATION, 
+                "'value' and 'public' fields must be supplied together"
+            )
+            # ensure that value and public fields are either both set or both unset
 
-        if update_requested:
+        if request.value is not None:
             permissions = Permissions.load(request.event_id, public_key)
             
             if not permissions.is_authorized("update_ticket_flag"):
                 raise DomainException(ErrorKind.PERMISSION, "permission denied")
                 # ensure that any state update attempts come from the event owner
 
-        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
-
-        if update_requested:
-            ticket.set_flag(request.value, request.public)
+            Ticket.set_flag(
+                request.event_id,
+                request.ticket_number,
+                request.value,
+                request.public
+            )
             value, is_public = request.value, request.public
+
         else:
-            value, is_public = ticket.get_flag()
+            value, is_public = Ticket.get_flag(request.event_id, request.ticket_number)
 
             if not is_public:
                 permissions = Permissions.load(request.event_id, public_key)

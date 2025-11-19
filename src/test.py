@@ -2056,5 +2056,74 @@ assert res.json()["data"]["content"]["detail"] == "permission denied", (
 
 ##########
 
+print("At the conclusion of their date, Geordi revoke's Leah's access")
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=leah.public_key,
+        permissions=Permissions()
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != False"
+)
+
+##########
+
+print("And finally he deletes the event.")
+
+req = Auth[DeleteRequest].load(
+    DeleteRequest(
+        event_id=event_id_3
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
+output(req, Auth[DeleteResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["success"] == True, (
+    f"{repr(res.json()["data"]["content"]["success"])} != True"
+)
+
+##########
+
+print("Wesley tries to search for it, but is -- as expected -- unsuccessful")
+
+req = Auth[SearchRequest].load(
+    SearchRequest(
+        text=event_id_3,
+        mode="id"
+    ),
+    wesley
+)
+res = requests.post(SERVER_URL + "/search", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 404)
+
+assert res.json()["data"]["content"]["detail"] == "event not found", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'event not found'"
+)
+
+##########
+
 print("Finally, Wesley gives up and goes to bed.")
 print("The end.")

@@ -25,7 +25,7 @@ class PermissionsRequest(BaseModel):
         description="Public key of the user whose permissions are being accessed"
     )
     permissions: Permissions | None = Field(
-        ...,
+        None,
         description="Permissions to apply for the target user; omit to leave unchanged"
     )
 

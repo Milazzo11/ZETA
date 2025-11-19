@@ -87,9 +87,9 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
         
         if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
-            return flag, True
+            return flag & (FLAG_PUBLIC_TOGGLE_BYTE - 1), True
         
-        return flag, False
+        return flag & (FLAG_PUBLIC_TOGGLE_BYTE - 1), False
 
 
     @staticmethod
@@ -109,9 +109,9 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.CONFLICT, "ticket flag retrieval failed")
         
         if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
-            return flag, True
+            return flag & (FLAG_PUBLIC_TOGGLE_BYTE - 1), True
         
-        return flag, False
+        return flag & (FLAG_PUBLIC_TOGGLE_BYTE - 1), False
 
 
     @staticmethod

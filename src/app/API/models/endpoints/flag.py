@@ -35,7 +35,7 @@ class FlagRequest(BaseModel):
         description="New flag value; omit to leave unchanged (for event owner only)"
     )
     public: bool | None = Field(
-        False,
+        None,
         description="Toggle public flag visibility (for event owner only)"
     )
 

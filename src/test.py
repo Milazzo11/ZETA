@@ -3,10 +3,6 @@ Testing/demonstration module.
 
 :author: Max Milazzo
 """
-## - TODO - do /flag tests
-## - do /permissions tests
-## - update readme
-## - do final style check
 
 
 
@@ -840,7 +836,7 @@ print("Maybe he can still get the current flag, though?")
 req = Auth[FlagRequest].load(
     FlagRequest(
         event_id=event_id_2,
-        ticket_number=1,
+        ticket_number=1
     ),
     william
 )
@@ -1434,7 +1430,7 @@ req = Auth[CreateRequest].load(
             enable_flags=True
         )
     ),
-    jean_luc
+    geordi
 )
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
 output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
@@ -1601,8 +1597,8 @@ req = Auth[FlagRequest].load(
 res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
-assert res.json()["data"]["content"]["detail"] == "permission denied", (
-    f"{repr(res.json()['data']['content']['detail'])} != 'permission denied'"
+assert res.json()["data"]["content"]["detail"] == "ticket flag is not public", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'ticket flag is not public'"
 )
 
 ##########

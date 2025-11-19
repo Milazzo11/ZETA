@@ -236,3 +236,71 @@ Traceback (most recent call last):
     audit_flag | CANCELED_BYTE,
     ~~~~~~~~~~~^~~~~~~~~~~~~~~
 TypeError: unsupported operand type(s) for |: 'NoneType' and 'int'
+2025-11-19 16:38:19,154 - ERROR - ProgrammingError('positional and named placeholders cannot be mixed')
+Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 108, in update_permissions
+    return API.update_permissions(data)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 150, in update_permissions
+    response = PermissionsResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\endpoints\permissions.py", line 62, in generate
+    request.permissions.update(request.event_id, request.target_public_key)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\models\permissions.py", line 123, in update
+    permissions_store.update_permissions(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        event_id,
+        ^^^^^^^^^
+        target_public_key,
+        ^^^^^^^^^^^^^^^^^^
+        self.model_dump()
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\storage\permissions_store.py", line 83, in update_permissions
+    cur.execute(
+    ~~~~~~~~~~~^
+        """
+        ^^^
+    ...<33 lines>...
+        }
+        ^
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\psycopg\cursor.py", line 97, in execute
+    raise ex.with_traceback(None)
+psycopg.ProgrammingError: positional and named placeholders cannot be mixed

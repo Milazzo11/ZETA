@@ -93,8 +93,8 @@ def update_permissions(event_id: str, public_key: str, permissions: dict) -> Non
                     stamp_ticket
                 )
                 VALUES (
-                    %s,
-                    %s,
+                    %(event_id)s,
+                    %(public_key_hash)s,
                     %(cancel_ticket)s,
                     %(see_ticket_flag)s,
                     %(update_ticket_flag)s,

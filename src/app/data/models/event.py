@@ -18,6 +18,10 @@ from typing import Self
 
 
 
+TICKET_LIMIT = 65_536
+# ticket limit per event
+
+
 TRANSFER_LIMIT = (1 << 6) - 1
 # transfer limit value: 0b00111111
 # (transfer version data stored in low 6 bits)
@@ -32,8 +36,13 @@ class Event(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Event ID")
     name: str = Field(..., description="Event name")
     description: str = Field(..., description="Event description")
-    tickets: int = Field(128, ge=1, le=65_536, description="Number of total event tickets")
-    issued: int = Field(0, ge=0, le=65_536, description="Number of tickets issued")
+    tickets: int = Field(
+        128,
+        ge=1,
+        le=TICKET_LIMIT,
+        description="Number of total event tickets"
+    )
+    issued: int = Field(0, ge=0, le=TICKET_LIMIT, description="Number of tickets issued")
     start: float = Field(
         default_factory=lambda: time.time(),
         description="Epoch timestamp of event start date"

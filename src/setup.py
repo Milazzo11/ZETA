@@ -54,11 +54,12 @@ def db_setup() -> None:
     try:
         with psycopg.connect(**DATABASE_CREDS) as conn:
             conn.execute("DROP TABLE IF EXISTS event_data;")
+            conn.execute("DROP TABLE IF EXISTS event_permissions;")
             conn.execute("DROP TABLE IF EXISTS events;")
 
             conn.execute(
                 f"""
-                CREATE TABLE IF NOT EXISTS events (
+                CREATE TABLE events (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     description TEXT,
@@ -71,6 +72,7 @@ def db_setup() -> None:
                         transfer_limit >= 0
                         AND transfer_limit <= {TRANSFER_LIMIT}
                     ),
+                    enable_flags BOOLEAN NOT NULL,
                     CHECK (issued <= tickets)
                 );
                 """
@@ -78,7 +80,7 @@ def db_setup() -> None:
 
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS event_data (
+                CREATE TABLE event_data (
                     event_id TEXT PRIMARY KEY,
                     event_key BYTEA NOT NULL,
                     owner_public_key_hash BYTEA NOT NULL,
@@ -93,7 +95,7 @@ def db_setup() -> None:
 
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS event_permissions (
+                CREATE TABLE event_permissions (
                     event_id TEXT NOT NULL,
                     public_key_hash BYTEA NOT NULL,
                     cancel_ticket BOOLEAN NOT NULL DEFAULT FALSE,

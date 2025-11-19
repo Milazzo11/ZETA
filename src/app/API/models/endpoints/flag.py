@@ -6,6 +6,7 @@
 
 
 
+from app.data.models.event import TICKET_LIMIT
 from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket, FLAG_PUBLIC_TOGGLE_BYTE
 from app.error.errors import ErrorKind, DomainException
@@ -21,7 +22,12 @@ class FlagRequest(BaseModel):
     """
 
     event_id: str = Field(..., description="Event ID of the flagged ticket")
-    ticket_number: int = Field(..., description="Flagged ticket number")
+    ticket_number: int = Field(
+        ...,
+        ge=1,
+        le=TICKET_LIMIT,
+        description="Flagged ticket number"
+    )
     value: int | None = Field(
         None,
         ge=0,

@@ -3,7 +3,6 @@ Testing/demonstration module.
 
 :author: Max Milazzo
 """
-## TODO -- change /verify to /validate
 ## - include ticket number in validate tests
 ## - do /flag tests
 ## - do /permissions tests
@@ -28,6 +27,10 @@ from typing import Any
 
 SERVER_URL = "http://localhost:8000"
 # server URL
+
+
+DEMO = False
+# demo mode flag
 
 
 
@@ -57,8 +60,9 @@ def output(
     print("\nRESPONSE:", response.model_dump())
     print()
 
-    input("> ")
-    display.clear()
+    if DEMO:
+        input("> ")
+        display.clear()
 
     assert status_code == expected_code, f"{status_code} != {expected_code}"
 
@@ -185,8 +189,7 @@ wesley_forged.public_key = jean_luc.public_key
 req = Auth[CancelRequest].load(
     CancelRequest(
         event_id=event_id_1,
-        ticket=beverly_ticket,
-        check_public_key=beverly.public_key
+        ticket_number=1
     ),
     wesley_forged
 )
@@ -296,9 +299,12 @@ req = Auth[ValidateRequest].load(
     ),
     wesley
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 1, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 1}"
+)
 assert res.json()["data"]["content"]["redeemed"] == False, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != False"
 )
@@ -340,7 +346,7 @@ assert res.json()["data"]["content"]["detail"] == "ticket for different user", (
 
 print(
     '"No matter," he thinks; he will simply skip redemption and proceed to ' \
-    "ticket verification and stamping.  So Jean-Luc makes a verification/" \
+    "ticket validation and stamping.  So Jean-Luc makes a validation/" \
     "stamping request in an attempt to confirm and mark Geordi as admitted."
 )
 
@@ -353,7 +359,7 @@ req = Auth[ValidateRequest].load(
     ),
     jean_luc
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket has not been redeemed", (
@@ -419,16 +425,16 @@ req = Auth[ValidateRequest].load(
     ),
     geordi
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
-assert res.json()["data"]["content"]["detail"] == "only event owners may stamp tickets", (
-    f"{repr(res.json()["data"]["content"]["detail"])} != 'only event owners may stamp tickets'"
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'permission denied'"
 )
 
 ##########
 
-print("Finally, Jean-Luc sends a proper verify/stamp request to admit Geordi")
+print("Finally, Jean-Luc sends a proper validate/stamp request to admit Geordi.")
 
 req = Auth[ValidateRequest].load(
     ValidateRequest(
@@ -439,9 +445,12 @@ req = Auth[ValidateRequest].load(
     ),
     jean_luc
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 1, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 1}"
+)
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
 )
@@ -471,7 +480,7 @@ req = Auth[ValidateRequest].load(
     ),
     jean_luc
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket is already stamped", (
@@ -482,7 +491,7 @@ assert res.json()["data"]["content"]["detail"] == "ticket is already stamped", (
 
 print(
     "Realizing that his plan is most likely now foiled, Wesley performs " \
-    "another verification request to see the status of Geordi's ticket.  " \
+    "another validation request to see the status of Geordi's ticket.  " \
     "He should be able to see if it is redeemed, but he won't know whether " \
     "or not Geordi was stamped and admitted."
 )
@@ -495,9 +504,12 @@ req = Auth[ValidateRequest].load(
     ),
     wesley
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 1, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 1}"
+)
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
 )
@@ -589,23 +601,22 @@ assert wesley_ticket is not None, "None is None"
 ##########
 
 print(
-    "Beverly finds out about her son's plan, takes a copy of his ticket " \
-    "data/public key, and attempts to cancel his ticket."
+    "Beverly finds out about her son's plan, figured out his ticket's issue " \
+    "issue number, and attempts to cancel his ticket."
 )
 
 req = Auth[CancelRequest].load(
     CancelRequest(
         event_id=event_id_1,
-        ticket=wesley_ticket,
-        check_public_key=wesley.public_key
+        ticket_number=2
     ),
     beverly
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
-assert res.json()["data"]["content"]["detail"] == "not event owner", (
-    f"{repr(res.json()["data"]["content"]["detail"])} != 'not event owner'"
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'permission denied'"
 )
 
 ##########
@@ -618,8 +629,7 @@ print(
 req = Auth[CancelRequest].load(
     CancelRequest(
         event_id=event_id_1,
-        ticket=wesley_ticket,
-        check_public_key=wesley.public_key
+        ticket_number=2
     ),
     jean_luc
 )
@@ -691,7 +701,7 @@ req = Auth[ValidateRequest].load(
     ),
     jean_luc
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
 
 assert res.json()["data"]["content"]["detail"] == "ticket canceled", (
@@ -1001,7 +1011,7 @@ assert beverly_ticket is not None, "None is None"
 
 print(
     "Beverly forgot the metadata that William injected into her ticket, so " \
-    "she makes a /verify request to confirm it."
+    "she makes a /validate request to confirm it."
 )
 
 req = Auth[ValidateRequest].load(
@@ -1012,9 +1022,12 @@ req = Auth[ValidateRequest].load(
     ),
     beverly
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 2, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 2}"
+)
 assert res.json()["data"]["content"]["redeemed"] == False, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
 )
@@ -1143,7 +1156,7 @@ assert res.json()["data"]["content"]["success"] == True, (
 ##########
 
 print(
-    "William verifies and stamps her ticket to confirm admittance, and he " \
+    "William validates and stamps her ticket to confirm admittance, and he " \
     "can see the custom metadata that he had set earlier."
 )
 
@@ -1156,9 +1169,12 @@ req = Auth[ValidateRequest].load(
     ),
     william
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 1, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 1}"
+)
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
 )
@@ -1179,7 +1195,7 @@ assert res.json()["data"]["content"]["metadata"] == "Imzadi <3", (
 
 print(
     "Deanna wants to see her ticket state data again and asks William to " \
-    "make another verify request to show her (no stamp)."
+    "make another validate request to show her (no stamp)."
 )
 
 req = Auth[ValidateRequest].load(
@@ -1190,9 +1206,12 @@ req = Auth[ValidateRequest].load(
     ),
     william
 )
-res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
 output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
 
+assert res.json()["data"]["content"]["ticket_number"] == 1, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 1}"
+)
 assert res.json()["data"]["content"]["redeemed"] == True, (
     f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
 )

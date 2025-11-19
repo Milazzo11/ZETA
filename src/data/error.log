@@ -1,0 +1,238 @@
+2025-11-18 22:51:16,382 - ERROR - UndefinedColumn('column "enable_flags" of relation "events" does not exist\nLINE 12:                     enable_flags\n                             ^')
+Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 63, in create_event
+    return API.create_event(data)
+           ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 24, in create_event
+    response = CreateResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\endpoints\create.py", line 43, in generate
+    request.event.create(public_key)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\models\event.py", line 138, in create
+    event_store.create(
+    ~~~~~~~~~~~~~~~~~~^
+        self.model_dump(),
+        ^^^^^^^^^^^^^^^^^^
+        SKC.key(),
+        ^^^^^^^^^^
+        hash.generate_bytes(owner_public_key)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\storage\event_store.py", line 91, in create
+    cur.execute(
+    ~~~~~~~~~~~^
+        """
+        ^^^
+    ...<25 lines>...
+        event
+        ^^^^^
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\psycopg\cursor.py", line 97, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "enable_flags" of relation "events" does not exist
+LINE 12:                     enable_flags
+                             ^
+2025-11-18 22:58:22,293 - ERROR - 1 validation error for ValidateResponse
+ticket_number
+  Field required [type=missing, input_value={'number': 1, 'redeemed':...': 63, 'metadata': None}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
+Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 88, in validate_ticket
+    return API.validate_ticket(data)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 94, in validate_ticket
+    response = ValidateResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\endpoints\validate.py", line 91, in generate
+    return cls(
+        number=ticket.number + 1, # 1-indexed ticket number
+    ...<4 lines>...
+        metadata=ticket.metadata
+    )
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 1 validation error for ValidateResponse
+ticket_number
+  Field required [type=missing, input_value={'number': 1, 'redeemed':...': 63, 'metadata': None}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
+2025-11-18 22:59:28,991 - ERROR - 1 validation error for ValidateResponse
+ticket_number
+  Field required [type=missing, input_value={'number': 1, 'redeemed':...': 63, 'metadata': None}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
+Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 88, in validate_ticket
+    return API.validate_ticket(data)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 94, in validate_ticket
+    response = ValidateResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\endpoints\validate.py", line 91, in generate
+    return cls(
+        number=ticket.number + 1, # 1-indexed ticket number
+    ...<4 lines>...
+        metadata=ticket.metadata
+    )
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 1 validation error for ValidateResponse
+ticket_number
+  Field required [type=missing, input_value={'number': 1, 'redeemed':...': 63, 'metadata': None}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
+2025-11-18 23:03:23,353 - ERROR - TypeError("unsupported operand type(s) for |: 'NoneType' and 'int'")
+Traceback (most recent call last):
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Max\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\server.py", line 98, in cancel_ticket
+    return API.cancel_ticket(data)
+           ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\API.py", line 122, in cancel_ticket
+    response = CancelResponse.generate(request, data.public_key)
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\API\models\endpoints\cancel.py", line 62, in generate
+    Ticket.cancel(
+    ~~~~~~~~~~~~~^
+        request.event_id,
+        ^^^^^^^^^^^^^^^^^
+        request.ticket_number - 1, # 0-indexed ticket number
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request.audit_flag
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Max\Desktop\Projects\Core\ZETA\src\app\data\models\ticket.py", line 123, in cancel
+    audit_flag | CANCELED_BYTE,
+    ~~~~~~~~~~~^~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for |: 'NoneType' and 'int'

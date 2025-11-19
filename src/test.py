@@ -1629,7 +1629,7 @@ assert res.json()["data"]["content"]["public"] is True, (
 
 ##########
 
-print("Now that the flag is public, Wesley cna see it.")
+print("Now that the flag is public, Wesley can see it.")
 
 req = Auth[FlagRequest].load(
     FlagRequest(

@@ -97,7 +97,8 @@ req = Auth[CreateRequest].load(
             description="Ressikan flute performance",
             tickets=3,
             restricted=False,
-            transfer_limit=63
+            transfer_limit=63,
+            enable_flags=False
         )
     ),
     jean_luc
@@ -722,7 +723,8 @@ req = Auth[CreateRequest].load(
             description="Any jazz except Dixieland",
             tickets=2,
             restricted=True,
-            transfer_limit=1
+            transfer_limit=1,
+            enable_flags=False
         )
     ),
     william
@@ -779,6 +781,28 @@ output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
 
 assert res.json()["data"]["content"]["detail"] == "signature verification failed", (
     f"{repr(res.json()["data"]["content"]["detail"])} != 'signature verification failed'"
+)
+
+##########
+
+print(
+    "William -- without actually checking the event stats -- believes that " \
+    "Wesley has somehow managed to register... so he issues a /cancel " \
+    "request on the first event ticket"
+)
+
+req = Auth[CancelRequest].load(
+    CancelRequest(
+        event_id=event_id_2,
+        ticket_number=1
+    ),
+    william
+)
+res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 409)
+
+assert res.json()["data"]["content"]["detail"] == "ticket cancelation failed", (
+    f"{repr(res.json()["data"]["content"]["detail"])} != 'ticket cancelation failed'"
 )
 
 ##########
@@ -1349,4 +1373,10 @@ assert res.json()["data"]["content"]["detail"] == "event not found", (
 ##########
 
 print("Wesley gives up and goes to bed.")
-print("The end.")
+print("The end...\n")
+
+print("But not really.  I added more features, so the testing must continue!\n")
+print(
+    "I'm too lazy to write more story, so this time Deanna creates a new " \
+    "event to test /flag and /permissions functionality."
+)

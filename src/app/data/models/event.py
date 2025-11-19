@@ -6,10 +6,10 @@ Event data model.
 
 
 
-from app.data.storage import event_store
 from app.crypto import hash
 from app.crypto.symmetric import SKC
-from app.error.errors import ErrorKind, DomainException
+from app.data.storage import event_store
+from app.error.errors import DomainException, ErrorKind
 
 import time
 import uuid

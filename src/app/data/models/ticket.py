@@ -7,9 +7,9 @@ Ticket data model.
 
 
 from .event import Event, TRANSFER_LIMIT
-from app.data.storage import ticket_store
 from app.crypto import hash
 from app.crypto.symmetric import SKC
+from app.data.storage import ticket_store
 from app.error.errors import DomainException, ErrorKind
 
 import base64

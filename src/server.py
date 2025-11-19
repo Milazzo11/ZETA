@@ -10,7 +10,7 @@ from app.API import API
 from app.API.models.base import Auth
 from app.API.models.endpoints import *
 from app.data.storage import connection
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 from app.error.map import HTTP_CODE
 from config import REDIS_URL
 

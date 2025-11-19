@@ -9,7 +9,7 @@
 from app.data.models.event import TICKET_LIMIT
 from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket, FLAG_PUBLIC_TOGGLE_BYTE
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 
 from pydantic import BaseModel, Field
 from typing import Self
@@ -47,7 +47,7 @@ class FlagResponse(BaseModel):
     """
 
     value: int = Field(..., description="Ticket flag value")
-    is_public: bool = Field(..., description="Public flag public visibility")
+    public: bool = Field(..., description="Public flag public visibility")
 
 
     @classmethod
@@ -66,7 +66,7 @@ class FlagResponse(BaseModel):
                 raise DomainException(ErrorKind.PERMISSION, "permission denied")
                 # ensure that any state update attempts come from the event owner
 
-            value, is_public = Ticket.set_flag(
+            value, public = Ticket.set_flag(
                 request.event_id,
                 request.ticket_number,
                 request.value,
@@ -74,9 +74,9 @@ class FlagResponse(BaseModel):
             )
 
         else:
-            value, is_public = Ticket.get_flag(request.event_id, request.ticket_number)
+            value, public = Ticket.get_flag(request.event_id, request.ticket_number)
 
-            if not is_public:
+            if not public:
                 permissions = Permissions.load(request.event_id, public_key)
 
                 if not permissions.is_authorized("see_ticket_flag"):
@@ -86,4 +86,4 @@ class FlagResponse(BaseModel):
                     )
                     # ensure that non-public flag state is only seen by the event owner
 
-        return cls(value=value, is_public=is_public)
+        return cls(value=value, public=public)

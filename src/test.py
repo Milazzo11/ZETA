@@ -5,6 +5,8 @@ Testing/demonstration module.
 """
 ## - TODO - do /flag tests
 ## - do /permissions tests
+## - update readme
+## - do final style check
 
 
 
@@ -15,6 +17,7 @@ from app.API.models.endpoints.register import Verification
 from app.API.models.endpoints.transfer import Transfer
 from app.crypto.asymmetric import AKC
 from app.data.models.event import Event
+from app.data.models.permissions import Permissions
 from app.util import display
 
 import requests
@@ -82,6 +85,7 @@ wesley = AKC()
 geordi = AKC()
 william = AKC()
 deanna = AKC()
+leah = AKC()
 
 ##########
 
@@ -1414,23 +1418,19 @@ assert res.json()["data"]["content"]["detail"] == "event not found", (
 
 ##########
 
-print("Wesley gives up and goes to bed.")
-print("The end...\n")
-
-print("But not really.  I added more features, so the testing must continue!\n")
 print(
-    "I'm too lazy to write more story, so this time Deanna creates a new " \
-    "event to test /flag and /permissions functionality."
+    "Later on Geordi decides to creates a new event -- a date night for him " \
+    "and his AI girlfriend Leah"
 )
 
 req = Auth[CreateRequest].load(
     CreateRequest(
         event=Event(
-            name="Test event",
-            description="Test",
-            tickets=16,
+            name="Date night with Leah",
+            description="Cleanup on holodeck 2",
+            tickets=2,
             restricted=True,
-            transfer_limit=63,
+            transfer_limit=0,
             enable_flags=True
         )
     ),
@@ -1439,31 +1439,626 @@ req = Auth[CreateRequest].load(
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
 output(req, Auth[CreateResponse](**res.json()), res.status_code, 200)
 
-event_id_1 = res.json()["data"]["content"]["event_id"]
-assert len(event_id_1) == 36, f"{len(event_id_1)} != 36"
+event_id_3 = res.json()["data"]["content"]["event_id"]
+assert len(event_id_3) == 36, f"{len(event_id_3)} != 36"
 
 ##########
 
-# Deanna give all perms except one to William
+print("As the event owner, Geordi gives Leah new access permissions")
 
-# William does all "restricted actions" -- all work except that one
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=leah.public_key,
+        permissions=Permissions(
+            cancel_ticket=True,
+            see_ticket_flag=True,
+            update_ticket_flag=True,
+            authorize_registration=True,
+            see_stamped_ticket=True
+        )
+    ),
+    geordi
+)
 
-# Deanna updates his perms and that one now works
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
 
-# William still cannot access /permissions or /delete tho even with all perms
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != False"
+)
 
-# Wesley tries anauthorized access for eveything that hasnt been tested yet
+##########
 
-# William sets flag
+print(
+    "Geordi wants Leah to be able to attend with him, so he signs a " \
+    "registration verification block for her.  Leah then registers for the " \
+    "event."
+)
 
-# William perms are set to all False (do one time check in db for deletion)
+leah_verification = Auth[Verification].load(
+    Verification(
+        event_id=event_id_3,
+        public_key=leah.public_key,
+        transfer_limit=0,
+        metadata="Holodeck 2 cleanup duty"
+    ),
+    geordi
+)
 
-# Deanna gets flag value
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_3,
+        verification=leah_verification
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 
-# Geordi tries to get flag value but it is private
+leah_ticket = res.json()["data"]["content"]["ticket"]
+assert leah_ticket is not None, "None is None"
 
-# Deanna makes it public, then Geordi can see it
+##########
 
-# Deanna alters just the value
+print(
+    "Because she now has cancel permissions, Leah decides to test them by " \
+    "canceling her own ticket."
+)
 
-# Geordi sees it has been updated
+req = Auth[CancelRequest].load(
+    CancelRequest(
+        event_id=event_id_3,
+        ticket_number=1
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
+output(req, Auth[CancelResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["success"] is True, (
+    f"{repr(res.json()['data']['content']['success'])} != True"
+)
+
+##########
+
+print(
+    "Curious about the new flag system, Leah tries to see the current flag " \
+    "for ticket index 1."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["value"] == 0, (
+    f"{repr(res.json()['data']['content']['value'])} != 0"
+)
+assert res.json()["data"]["content"]["public"] is False, (
+    f"{repr(res.json()['data']['content']['is_public'])} != False"
+)
+
+##########
+
+print(
+    "Leah decides to annotate the ticket with a new flag value (still not " \
+    "public, though)"
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+        value=69
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["value"] == 69, (
+    f"{repr(res.json()['data']['content']['value'])} != 69"
+)
+assert res.json()["data"]["content"]["public"] is False, (
+    f"{repr(res.json()['data']['content']['public'])} != False"
+)
+
+##########
+
+print(
+    "Wesley is nosy and wants to see what Leah wrote, so he tries to " \
+    "retrieve the same ticket flag."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+    ),
+    wesley
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
+
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'permission denied'"
+)
+
+##########
+
+print(
+    "Leah decides to make the flag visible to everyone by toggling only the " \
+    "public bit."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+        public=True
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["value"] == 69, (
+    f"{repr(res.json()['data']['content']['value'])} != 69"
+)
+assert res.json()["data"]["content"]["public"] is True, (
+    f"{repr(res.json()['data']['content']['public'])} != True"
+)
+
+##########
+
+print("Now that the flag is public, Wesley cna see it.")
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+    ),
+    wesley
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["value"] == 69, (
+    f"{repr(res.json()['data']['content']['value'])} != 69"
+)
+assert res.json()["data"]["content"]["public"] is True, (
+    f"{repr(res.json()['data']['content']['public'])} != True"
+)
+
+##########
+
+print(
+    "Leah changes her mind about everything, so she updates both the flag " \
+    "value and the public bit in a single request."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+        value=67,
+        public=False
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[FlagResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["value"] == 67, (
+    f"{repr(res.json()['data']['content']['value'])} != 67"
+)
+assert res.json()["data"]["content"]["public"] is False, (
+    f"{repr(res.json()['data']['content']['public'])} != False"
+)
+
+##########
+
+print(
+    "Putting her authorization powers to good use, Leah signs a " \
+    "registration verification block for Jean-Luc so that he can attend as " \
+    "well."
+)
+
+jean_luc_verification = Auth[Verification].load(
+    Verification(
+        event_id=event_id_3,
+        public_key=jean_luc.public_key,
+        transfer_limit=0,
+        metadata="Bring a bottle of Chateau Picard"
+    ),
+    leah
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_3,
+        verification=jean_luc_verification
+    ),
+    jean_luc
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
+
+jean_luc_ticket = res.json()["data"]["content"]["ticket"]
+assert jean_luc_ticket is not None, "None is None"
+
+##########
+
+print(
+    "Jean-Luc shows up for the date and redeems his ticket."
+)
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id_3,
+        ticket=jean_luc_ticket
+    ),
+    jean_luc
+)
+res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
+output(req, Auth[RedeemResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["success"] is True, (
+    f"{repr(res.json()['data']['content']['success'])} != True"
+)
+
+##########
+
+print(
+    "Leah validates Jean-Luc's ticket to confirm that it has been redeemed " \
+    "and to check its stamped status."
+)
+
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
+        event_id=event_id_3,
+        ticket=jean_luc_ticket,
+        check_public_key=jean_luc.public_key
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["ticket_number"] == 2, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 2}"
+)
+assert res.json()["data"]["content"]["redeemed"] == True, (
+    f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
+)
+assert res.json()["data"]["content"]["stamped"] == False, (
+    f"{repr(res.json()["data"]["content"]["stamped"])} != False"
+)
+assert res.json()["data"]["content"]["version"] == 1, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 1}"
+)
+assert res.json()["data"]["content"]["transfer_limit"] == 0, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 0}"
+)
+assert res.json()["data"]["content"]["metadata"] == "Bring a bottle of Chateau Picard", (
+    f"{repr(res.json()["data"]["content"]["metadata"])} != 'Bring a bottle of Chateau Picard'"
+)
+
+##########
+
+print(
+    "Leah decides to try stamping Jean-Luc's ticket herself, but she does " \
+    "not yet have stamping permissions."
+)
+
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
+        event_id=event_id_3,
+        ticket=jean_luc_ticket,
+        check_public_key=jean_luc.public_key,
+        stamp=True
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
+
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'permission denied'"
+)
+
+##########
+
+print(
+    "Geordi decides that Leah should be able to stamp tickets, but he no " \
+    "longer wants her to be able to cancel them, so he updates her " \
+    "permissions."
+)
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=leah.public_key,
+        permissions=Permissions(
+            cancel_ticket=False,
+            see_ticket_flag=True,
+            update_ticket_flag=True,
+            authorize_registration=True,
+            see_stamped_ticket=True,
+            stamp_ticket=True
+        )
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != True"
+)
+
+##########
+
+print(
+    "With her newly granted permissions, Leah stamps Jean-Luc's ticket."
+)
+
+req = Auth[ValidateRequest].load(
+    ValidateRequest(
+        event_id=event_id_3,
+        ticket=jean_luc_ticket,
+        check_public_key=jean_luc.public_key,
+        stamp=True
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/validate", json=req.model_dump())
+output(req, Auth[ValidateResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["ticket_number"] == 2, (
+    f"{repr(res.json()["data"]["content"]["ticket_number"]) != 2}"
+)
+assert res.json()["data"]["content"]["redeemed"] == True, (
+    f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
+)
+assert res.json()["data"]["content"]["stamped"] == True, (
+    f"{repr(res.json()["data"]["content"]["stamped"])} != True"
+)
+assert res.json()["data"]["content"]["version"] == 1, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 1}"
+)
+assert res.json()["data"]["content"]["transfer_limit"] == 0, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 0}"
+)
+assert res.json()["data"]["content"]["metadata"] == "Bring a bottle of Chateau Picard", (
+    f"{repr(res.json()["data"]["content"]["metadata"])} != 'Bring a bottle of Chateau Picard'"
+)
+
+##########
+
+print(
+    "Leah then attempts to cancel Jean-Luc's ticket, but Geordi has already " \
+    "revoked her cancel permission."
+)
+
+req = Auth[CancelRequest].load(
+    CancelRequest(
+        event_id=event_id_3,
+        ticket_number=2
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
+
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'permission denied'"
+)
+
+##########
+
+print(
+    "To double-check what he has configured, Geordi queries Leah's current " \
+    "permissions for the event."
+)
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=leah.public_key
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != True"
+)
+
+##########
+
+print(
+    "Satisfied that Leah is being responsible (enough), Geordi decides to " \
+    "grant her full permissions for the event."
+)
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=leah.public_key,
+        permissions=Permissions(
+            cancel_ticket=True,
+            see_ticket_flag=True,
+            update_ticket_flag=True,
+            authorize_registration=True,
+            see_stamped_ticket=True,
+            stamp_ticket=True
+        )
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != True"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == True, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != True"
+)
+
+##########
+
+print(
+    "Leah now tries to use the /permissions endpoint herself to grant " \
+    "additional access to Jean-Luc, but only the event owner may call it."
+)
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=jean_luc.public_key,
+        permissions=Permissions(
+            cancel_ticket=True,
+            see_ticket_flag=True,
+            update_ticket_flag=True,
+            authorize_registration=True,
+            see_stamped_ticket=True,
+            stamp_ticket=True
+        )
+    ),
+    leah
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
+
+assert res.json()["data"]["content"]["detail"] == "not event owner", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'not event owner'"
+)
+
+##########
+
+print(
+    "Curious what the default state looks like, Geordi queries permissions " \
+    "for Wesley, who has not been explicitly granted any access."
+)
+
+req = Auth[PermissionsRequest].load(
+    PermissionsRequest(
+        event_id=event_id_3,
+        target_public_key=wesley.public_key
+    ),
+    geordi
+)
+res = requests.post(SERVER_URL + "/permissions", json=req.model_dump())
+output(req, Auth[PermissionsResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["permissions"]["cancel_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["cancel_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_ticket_flag"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_ticket_flag"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["update_ticket_flag"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["update_ticket_flag"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["authorize_registration"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["authorize_registration"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["see_stamped_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["see_stamped_ticket"])} != False"
+)
+assert res.json()["data"]["content"]["permissions"]["stamp_ticket"] == False, (
+    f"{repr(res.json()["data"]["content"]["permissions"]["stamp_ticket"])} != False"
+)
+
+##########
+
+print(
+    "Predictably, Wesley attempts to set a ticket flag without the " \
+    "appropriate permissions."
+)
+
+req = Auth[FlagRequest].load(
+    FlagRequest(
+        event_id=event_id_3,
+        ticket_number=1,
+        value=21
+    ),
+    wesley
+)
+res = requests.post(SERVER_URL + "/flag", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code, 403)
+
+assert res.json()["data"]["content"]["detail"] == "permission denied", (
+    f"{repr(res.json()['data']['content']['detail'])} != 'permission denied'"
+)
+
+##########
+
+print("Finally, Wesley gives up and goes to bed.")
+print("The end.")

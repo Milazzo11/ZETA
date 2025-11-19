@@ -7,7 +7,7 @@ Base authenticated data packet models.
 
 
 from app.crypto.asymmetric import AKC
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 from app.util import keys
 
 import math

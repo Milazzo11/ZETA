@@ -8,7 +8,7 @@
 
 from app.API.models.base import Auth
 from app.data.models.ticket import Ticket
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 
 from pydantic import BaseModel, Field
 from typing import Self

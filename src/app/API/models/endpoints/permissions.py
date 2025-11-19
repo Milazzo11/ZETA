@@ -7,7 +7,7 @@
 
 
 from app.data.models.permissions import Permissions
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 
 from pydantic import BaseModel, Field
 from typing import Self

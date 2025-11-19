@@ -1,13 +1,15 @@
 """
+Permissions data model.
+
+:author: Max Milazzo
 """
 
 
-from app.data.storage import permissions_store
-from app.crypto import hash
-from app.error.errors import ErrorKind, DomainException
 
-import time
-import uuid
+from app.crypto import hash
+from app.data.storage import permissions_store
+from app.error.errors import DomainException, ErrorKind
+
 from pydantic import BaseModel, Field
 from typing import Self
 
@@ -47,6 +49,11 @@ class Permissions(BaseModel):
     @staticmethod
     def is_owner(event_id: str, check_public_key: str) -> bool:
         """
+        Check if public key belongs to event owner.
+
+        :param event_id: unique event identifier
+        :param check_public_key: public key to check for ownership status
+        :return: event ownership status of checked public key
         """
 
         public_key_hash = permissions_store.load_owner_public_key_hash(event_id)
@@ -89,6 +96,10 @@ class Permissions(BaseModel):
 
     def is_authorized(self, permission: str) -> bool:
         """
+        Check if a loaded permission is set.
+
+        :param permission: permission field to check
+        :return: authorization status
         """
 
         if permission not in Permissions.model_fields:
@@ -100,6 +111,9 @@ class Permissions(BaseModel):
     def update(self, event_id: str, target_public_key: str) -> None:
         """
         Update event permissions.
+
+        :param event_id: unique event identifier
+        :param target_public_key: public key of the target user for permission update
         """
 
         if all(not getattr(self, name) for name in Permissions.model_fields):

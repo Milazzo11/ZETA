@@ -9,7 +9,7 @@
 from app.data.models.event import TRANSFER_LIMIT
 from app.data.models.permissions import Permissions
 from app.data.models.ticket import Ticket
-from app.error.errors import ErrorKind, DomainException
+from app.error.errors import DomainException, ErrorKind
 
 from pydantic import BaseModel, Field
 from typing import Any, Self

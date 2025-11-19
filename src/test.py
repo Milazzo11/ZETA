@@ -3,8 +3,7 @@ Testing/demonstration module.
 
 :author: Max Milazzo
 """
-## - include ticket number in validate tests
-## - do /flag tests
+## - TODO - do /flag tests
 ## - do /permissions tests
 
 

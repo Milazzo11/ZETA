@@ -81,8 +81,15 @@ class Ticket(BaseModel):
             value = FLAG_PUBLIC_TOGGLE_BYTE if public else 0
             # set only the high-order bit
 
-        if not ticket_store.set_flag(event_id, number, mask, value):
+        flag = ticket_store.set_flag(event_id, number, mask, value)
+
+        if flag is None:
             raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
+        
+        if (flag & FLAG_PUBLIC_TOGGLE_BYTE) == FLAG_PUBLIC_TOGGLE_BYTE:
+            return flag, True
+        
+        return flag, False
 
 
     @staticmethod

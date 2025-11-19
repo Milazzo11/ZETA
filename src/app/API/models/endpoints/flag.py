@@ -66,13 +66,12 @@ class FlagResponse(BaseModel):
                 raise DomainException(ErrorKind.PERMISSION, "permission denied")
                 # ensure that any state update attempts come from the event owner
 
-            Ticket.set_flag(
+            value, is_public = Ticket.set_flag(
                 request.event_id,
                 request.ticket_number,
                 request.value,
                 request.public
             )
-            value, is_public = request.value, request.public
 
         else:
             value, is_public = Ticket.get_flag(request.event_id, request.ticket_number)

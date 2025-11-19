@@ -131,7 +131,7 @@ def load_state_byte(event_id: str, ticket_number: int) -> int | None:
     return int(row["state_byte"]) if row else None
 
 
-def set_flag(event_id: str, ticket_number: int, mask: int, value: int) -> bool:
+def set_flag(event_id: str, ticket_number: int, mask: int, value: int) -> int | None:
     """
     Atomically update the flag byte using: (old_byte & mask) | value.
 
@@ -139,7 +139,7 @@ def set_flag(event_id: str, ticket_number: int, mask: int, value: int) -> bool:
     :param ticket_number: 0-index ticket number
     :param mask: AND mask to apply to the old byte
     :param value: OR value to apply after masking
-    :return: True if exactly one byte was updated
+    :return: ticket flag value.
     """
 
     pool = db.get_pool()
@@ -155,12 +155,14 @@ def set_flag(event_id: str, ticket_number: int, mask: int, value: int) -> bool:
                     (get_byte(flag_bytes, %s) & %s) | %s
                 )
                 WHERE event_id = %s
-                    AND flag_bytes IS NOT NULL;
+                    AND flag_bytes IS NOT NULL
+                RETURNING get_byte(flag_bytes, %s) as flag_byte;
                 """,
-                (ticket_number, ticket_number, mask, value, event_id)
+                (ticket_number, ticket_number, mask, value, event_id, ticket_number)
             )
-
-            return cur.rowcount == 1
+            row = cur.fetchone()
+    
+    return int(row["flag_byte"]) if row else None
 
 
 def get_flag(event_id: str, ticket_number: int) -> int | None:

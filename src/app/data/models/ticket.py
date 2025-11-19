@@ -52,20 +52,36 @@ class Ticket(BaseModel):
 
 
     @staticmethod
-    def set_flag(event_id: str, number: int, value: int, public: bool) -> None:
+    def set_flag(
+        event_id: str,
+        number: int,
+        value: int | None,
+        public: bool | None
+    ) -> None:
         """
         Set the ticket flag.
 
         :param event_id: unique event identifier
         :param number: ticket issue number
-        :param value: new flag value
-        :param public: public visibility
+        :param value: new flag value; omitted if setting public status only
+        :param public: public visibility; omitted if setting the value only
         """
 
-        if public:
-            value = value | FLAG_PUBLIC_TOGGLE_BYTE
+        if (value is not None) and (public is not None):
+            mask = 0
+            value = (FLAG_PUBLIC_TOGGLE_BYTE if public else 0) | value
+            # set entire byte as value
+            
+        elif (value is not None) and (public is None):
+            mask = FLAG_PUBLIC_TOGGLE_BYTE
+            # set all but the high-order bit
 
-        if not ticket_store.set_flag(event_id, number, value):
+        else:
+            mask = FLAG_PUBLIC_TOGGLE_BYTE - 1
+            value = FLAG_PUBLIC_TOGGLE_BYTE if public else 0
+            # set only the high-order bit
+
+        if not ticket_store.set_flag(event_id, number, mask, value):
             raise DomainException(ErrorKind.CONFLICT, "ticket flag set failed")
 
 

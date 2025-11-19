@@ -15,7 +15,7 @@ def issue(event_id: str) -> int | None:
     Update the database to issue a new event ticket with a unique ticket number.
 
     :param event_id: unique event identifier
-    :return: the issued ticket number or None if a ticket cannot be issued
+    :return: the issued ticket number (0-index) or None if a ticket cannot be issued
     """
 
     pool = db.get_pool()
@@ -42,8 +42,8 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     Update the database to reflect a ticket reissue (version number increase).
 
     :param event_id: unique event identifier
-    :param ticket_number: ticket issue number
-    :param version: current version (before update)
+    :param ticket_number: 0-index ticket number
+    :param version: current version (0-index, before update)
     :return: reissue success status
     """
 
@@ -69,7 +69,7 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
     Set an integer state (representing redeemed, stamped, or canceled) on ticket data.
     
     :param event_id: unique event identifier
-    :param ticket_number: ticket issue number
+    :param ticket_number: 0-index ticket number
     :param data: new data byte with state update applied
     :param threshold: threshold value (current byte must be less than this to update)
     :return: state update success status
@@ -93,7 +93,8 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
                 """,
                 (
                     ticket_number,
-                    data, event_id,
+                    data,
+                    event_id,
                     ticket_number,
                     threshold,
                     ticket_number,
@@ -109,7 +110,7 @@ def load_state_byte(event_id: str, ticket_number: int) -> int | None:
     Load a ticket's state data byte from the database.
 
     :param event_id: unique event identifier
-    :param ticket_number: ticket issue number
+    :param ticket_number: 0-index ticket number
     :return: ticket state data byte or None if not found
     """
 
@@ -130,14 +131,15 @@ def load_state_byte(event_id: str, ticket_number: int) -> int | None:
     return int(row["state_byte"]) if row else None
 
 
-def set_flag(event_id: str, ticket_number: int, value: int) -> bool:
+def set_flag(event_id: str, ticket_number: int, mask: int, value: int) -> bool:
     """
-    Set the flag byte at the given ticket index and return its new value.
+    Atomically update the flag byte using: (old_byte & mask) | value.
 
-    :param event_id: ID of the event
-    :param ticket_number: 0-indexed ticket number
-    :param value: new byte value (already validated 0–255)
-    :return: set success status
+    :param event_id: unique event identifier
+    :param ticket_number: 0-index ticket number
+    :param mask: AND mask to apply to the old byte
+    :param value: OR value to apply after masking
+    :return: True if exactly one byte was updated
     """
 
     pool = db.get_pool()
@@ -147,11 +149,15 @@ def set_flag(event_id: str, ticket_number: int, value: int) -> bool:
             cur.execute(
                 """
                 UPDATE event_data
-                SET flag_bytes = set_byte(flag_bytes, %s, %s)
+                SET flag_bytes = set_byte(
+                    flag_bytes,
+                    %s,
+                    (get_byte(flag_bytes, %s) & %s) | %s
+                )
                 WHERE event_id = %s
                     AND flag_bytes IS NOT NULL;
                 """,
-                (ticket_number, value, event_id)
+                (ticket_number, ticket_number, mask, value, event_id)
             )
 
             return cur.rowcount == 1
@@ -162,7 +168,7 @@ def get_flag(event_id: str, ticket_number: int) -> int | None:
     Get a ticket's flag value.
 
     :param event_id: unique event identifier
-    :param ticket_number: ticket issue number
+    :param ticket_number: 0-index ticket number
     :return: ticket flag value.
     """
 

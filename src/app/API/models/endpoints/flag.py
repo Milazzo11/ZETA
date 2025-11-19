@@ -53,14 +53,7 @@ class FlagResponse(BaseModel):
         :return: server response
         """
 
-        if (request.value is None) != (request.public is None):
-            raise DomainException(
-                ErrorKind.VALIDATION, 
-                "'value' and 'public' fields must be supplied together"
-            )
-            # ensure that value and public fields are either both set or both unset
-
-        if request.value is not None:
+        if (request.value is not None) or (request.public is not None):
             permissions = Permissions.load(request.event_id, public_key)
             
             if not permissions.is_authorized("update_ticket_flag"):

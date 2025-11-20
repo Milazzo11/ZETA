@@ -68,13 +68,16 @@ class FlagResponse(BaseModel):
 
             value, public = Ticket.set_flag(
                 request.event_id,
-                request.ticket_number,
+                request.ticket_number - 1, # 0-indexed ticket number
                 request.value,
                 request.public
             )
 
         else:
-            value, public = Ticket.get_flag(request.event_id, request.ticket_number)
+            value, public = Ticket.get_flag(
+                request.event_id,
+                request.ticket_number - 1 # 0-indexed ticket number
+            )
 
             if not public:
                 permissions = Permissions.load(request.event_id, public_key)

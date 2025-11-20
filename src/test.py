@@ -1634,7 +1634,7 @@ print("Now that the flag is public, Wesley can see it.")
 req = Auth[FlagRequest].load(
     FlagRequest(
         event_id=event_id_3,
-        ticket_number=1,
+        ticket_number=1
     ),
     wesley
 )
